@@ -1,0 +1,120 @@
+{{> head}}
+<body class="single-post">
+
+  {{> header}}
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="container">
+
+      <article class="post" aria-labelledby="post-title">
+
+        <header class="post-header">
+
+          {{#if post.tags}}
+            <div class="post-header__tags" aria-label="Etiquetas">
+              {{#each post.tags}}
+                <a href="{{url}}" class="post-tag">{{name}}</a>
+              {{/each}}
+            </div>
+          {{/if}}
+
+          <h1 id="post-title" class="post-header__title">{{post.title}}</h1>
+
+          <div class="post-meta" aria-label="Información del artículo">
+            {{#if post.author}}
+              <span class="post-meta__author">
+                {{#if post.author.avatar}}
+                  <img
+                    src="{{post.author.avatar}}"
+                    alt="{{post.author.name}}"
+                    class="post-meta__avatar"
+                    width="32"
+                    height="32"
+                    loading="lazy"
+                  >
+                {{/if}}
+                <a href="{{post.author.url}}" class="post-meta__author-link" rel="author">
+                  {{post.author.name}}
+                </a>
+              </span>
+            {{/if}}
+
+            <time class="post-meta__date" datetime="{{post.createdAt format='YYYY-MM-DD'}}">
+              {{post.createdAt format="D [de] MMMM, YYYY"}}
+            </time>
+
+            {{#if post.readingTime}}
+              <span class="post-meta__reading-time">
+                {{post.readingTime}} min de lectura
+              </span>
+            {{/if}}
+          </div>
+
+          {{#if post.mainImage}}
+            <figure class="post-header__figure">
+              <img
+                src="{{post.mainImage}}"
+                alt="{{#if post.mainImageAlt}}{{post.mainImageAlt}}{{else}}Imagen de {{post.title}}{{/if}}"
+                class="post-header__image"
+                loading="eager"
+                decoding="async"
+              >
+              {{#if post.mainImageCaption}}
+                <figcaption class="post-header__caption">{{post.mainImageCaption}}</figcaption>
+              {{/if}}
+            </figure>
+          {{/if}}
+
+        </header>
+
+        <div class="post-content">
+          {{{post.text}}}
+        </div>
+
+        <footer class="post-footer">
+
+          {{#if post.tags}}
+            <div class="post-footer__tags" aria-label="Etiquetas del artículo">
+              <span class="post-footer__tags-label">Etiquetas:</span>
+              {{#each post.tags}}
+                <a href="{{url}}" class="post-tag">{{name}}</a>
+              {{/each}}
+            </div>
+          {{/if}}
+
+          {{#if post.author}}
+            <div class="post-author-card" aria-label="Sobre el autor">
+              {{#if post.author.avatar}}
+                <img
+                  src="{{post.author.avatar}}"
+                  alt="{{post.author.name}}"
+                  class="post-author-card__avatar"
+                  width="64"
+                  height="64"
+                  loading="lazy"
+                >
+              {{/if}}
+              <div class="post-author-card__info">
+                <p class="post-author-card__label">Escrito por</p>
+                <a href="{{post.author.url}}" class="post-author-card__name" rel="author">
+                  {{post.author.name}}
+                </a>
+                {{#if post.author.description}}
+                  <p class="post-author-card__bio">{{post.author.description}}</p>
+                {{/if}}
+              </div>
+            </div>
+          {{/if}}
+
+        </footer>
+
+      </article>
+
+    </div>
+  </main>
+
+  {{> footer}}
+
+  <script src="{{@website.themeUrl}}/assets/js/main.js" defer></script>
+</body>
+</html>

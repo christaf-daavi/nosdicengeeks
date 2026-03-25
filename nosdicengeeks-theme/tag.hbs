@@ -1,0 +1,94 @@
+{{> head}}
+<body class="tag-archive">
+
+  {{> header}}
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="container">
+
+      <header class="archive-header">
+        <p class="archive-header__label">Etiqueta</p>
+        <h1 class="archive-header__title">{{tag.name}}</h1>
+        {{#if tag.description}}
+          <p class="archive-header__description">{{tag.description}}</p>
+        {{/if}}
+      </header>
+
+      {{#if posts}}
+        <section class="posts-section" aria-label="Artículos con la etiqueta {{tag.name}}">
+
+          <div class="post-grid">
+            {{#each posts}}
+              <article class="post-card" aria-label="{{title}}">
+
+                {{#if mainImage}}
+                  <a href="{{url}}" class="post-card__image-link" tabindex="-1" aria-hidden="true">
+                    <figure class="post-card__figure">
+                      <img
+                        src="{{mainImage}}"
+                        alt="{{#if mainImageAlt}}{{mainImageAlt}}{{else}}Imagen de {{title}}{{/if}}"
+                        class="post-card__image"
+                        loading="lazy"
+                        decoding="async"
+                      >
+                    </figure>
+                  </a>
+                {{/if}}
+
+                <div class="post-card__body">
+
+                  <header class="post-card__header">
+                    <h2 class="post-card__title">
+                      <a href="{{url}}" class="post-card__title-link">{{title}}</a>
+                    </h2>
+                  </header>
+
+                  {{#if excerpt}}
+                    <p class="post-card__excerpt">{{excerpt}}</p>
+                  {{/if}}
+
+                  <footer class="post-card__footer">
+                    <time class="post-card__date" datetime="{{createdAt format='YYYY-MM-DD'}}">
+                      {{createdAt format="D [de] MMMM, YYYY"}}
+                    </time>
+                    <a href="{{url}}" class="post-card__read-more" aria-label="Leer más sobre {{title}}">
+                      Leer más
+                    </a>
+                  </footer>
+
+                </div>
+              </article>
+            {{/each}}
+          </div>
+
+          {{#if pagination}}
+            <nav class="pagination" role="navigation" aria-label="Paginación">
+              {{#if pagination.previousPage}}
+                <a href="{{pagination.previousPage}}" class="pagination__link pagination__link--prev" rel="prev">
+                  &larr; Más recientes
+                </a>
+              {{/if}}
+              <span class="pagination__info">
+                Página {{pagination.currentPage}} de {{pagination.totalPages}}
+              </span>
+              {{#if pagination.nextPage}}
+                <a href="{{pagination.nextPage}}" class="pagination__link pagination__link--next" rel="next">
+                  Más antiguos &rarr;
+                </a>
+              {{/if}}
+            </nav>
+          {{/if}}
+
+        </section>
+      {{else}}
+        <p class="no-posts">No hay artículos con esta etiqueta aún.</p>
+      {{/if}}
+
+    </div>
+  </main>
+
+  {{> footer}}
+
+  <script src="{{@website.themeUrl}}/assets/js/main.js" defer></script>
+</body>
+</html>

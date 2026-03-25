@@ -1,0 +1,31 @@
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-inner">
+
+    {{#if menus.footerMenu}}
+      <nav class="footer-nav" role="navigation" aria-label="Menú de pie de página">
+        <ul class="footer-nav__list" role="list">
+          {{#each menus.footerMenu}}
+            <li class="footer-nav__item">
+              <a href="{{url}}" class="footer-nav__link">{{label}}</a>
+            </li>
+          {{/each}}
+        </ul>
+      </nav>
+    {{/if}}
+
+    <div class="footer-branding">
+      <a href="{{@website.url}}" class="footer-logo-link" aria-label="{{@website.name}} — Inicio">
+        {{#if @website.logo}}
+          <img src="{{@website.logo}}" alt="{{@website.name}}" class="footer-logo">
+        {{else}}
+          <span class="footer-site-title">{{@website.name}}</span>
+        {{/if}}
+      </a>
+    </div>
+
+    <p class="footer-copyright">
+      &copy; {{@now year="numeric"}} {{@website.name}}. Todos los derechos reservados.
+    </p>
+
+  </div>
+</footer>
