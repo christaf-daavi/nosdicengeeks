@@ -1,0 +1,166 @@
+---
+const year = new Date().getFullYear();
+
+const socials = [
+  {
+    label: 'Twitter / X',
+    href: 'https://twitter.com/nosdicengeeks',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  },
+  {
+    label: 'GitHub',
+    href: 'https://github.com/nosdicengeeks',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>`,
+  },
+];
+
+const geekQuotes = [
+  'La mejor documentación es el código que se explica solo.',
+  'En producción todo funciona hasta que deja de funcionar.',
+  'No es un bug, es una feature no documentada.',
+  'rm -rf miedo && sudo chmod 777 creatividad',
+  'El software nunca está terminado, solo abandonado.',
+];
+
+const quote = geekQuotes[Math.floor(Math.random() * geekQuotes.length)];
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+
+    <div class="footer-brand">
+      <a href="/" class="site-logo" aria-label="NosDicenGeeks">
+        <span class="logo-bracket">[</span>Nos<span>Dicen</span>Geeks<span class="logo-bracket">]</span>
+      </a>
+      <p class="footer-quote"><span class="quote-prompt">// </span>{quote}</p>
+    </div>
+
+    <nav class="footer-socials" aria-label="Redes sociales">
+      {socials.map(({ label, href, icon }) => (
+        <a
+          href={href}
+          class="social-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={label}
+          title={label}
+          set:html={icon}
+        />
+      ))}
+    </nav>
+
+    <p class="footer-copy">
+      &copy; {year} NosDicenGeeks &mdash;
+      Hecho con <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a>
+      &amp; demasiado café.
+    </p>
+
+  </div>
+</footer>
+
+<style>
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: var(--space-3) var(--space-8);
+    align-items: center;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .footer-brand .site-logo {
+    font-family: var(--font-heading);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
+
+  .footer-brand .site-logo:hover {
+    color: var(--color-green);
+    text-shadow: var(--glow-green);
+  }
+
+  .logo-bracket {
+    color: var(--color-green);
+    font-weight: 300;
+  }
+
+  .footer-brand .site-logo span:not(.logo-bracket) {
+    color: var(--color-green);
+  }
+
+  .footer-quote {
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+    margin-bottom: 0;
+    font-style: italic;
+  }
+
+  .quote-prompt {
+    color: var(--color-green-dim);
+    font-style: normal;
+  }
+
+  .footer-socials {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-faint);
+    transition: color var(--transition), box-shadow var(--transition);
+  }
+
+  .social-link:hover {
+    color: var(--color-green);
+    box-shadow: var(--glow-green);
+    text-shadow: none;
+  }
+
+  .footer-copy {
+    grid-column: 1 / -1;
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+    margin-bottom: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-muted);
+  }
+
+  .footer-copy a {
+    color: var(--color-text-muted);
+  }
+
+  .footer-copy a:hover {
+    color: var(--color-green);
+    text-shadow: none;
+  }
+
+  @media (max-width: 480px) {
+    .footer-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .footer-socials {
+      grid-row: auto;
+      grid-column: auto;
+    }
+  }
+</style>

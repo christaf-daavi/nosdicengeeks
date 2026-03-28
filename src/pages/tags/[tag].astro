@@ -1,0 +1,94 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogPostCard from '../../components/BlogPostCard.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+  const tags = [...new Set(posts.flatMap(post => post.data.tags))];
+
+  return tags.map(tag => ({
+    params: { tag },
+    props: {
+      tag,
+      posts: posts
+        .filter(post => post.data.tags.includes(tag))
+        .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+    },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<BaseLayout
+  title={`#${tag} — NosDicenGeeks`}
+  description={`Todos los posts etiquetados con #${tag} en NosDicenGeeks.`}
+>
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <div class="tag-breadcrumb">
+          <a href="/tags" class="breadcrumb-link">Tags</a>
+          <span aria-hidden="true"> / </span>
+          <span class="tag tag--active">#{tag}</span>
+        </div>
+        <h1 class="section__title">#{tag}</h1>
+        <p class="section__subtitle">
+          {posts.length} {posts.length === 1 ? 'post' : 'posts'} con esta etiqueta
+        </p>
+      </div>
+
+      <div class="posts-grid">
+        {posts.map(post => (
+          <BlogPostCard
+            title={post.data.title}
+            description={post.data.description}
+            pubDate={post.data.pubDate}
+            tags={post.data.tags}
+            slug={post.id}
+            image={post.data.image}
+          />
+        ))}
+      </div>
+
+      <div class="back-link">
+        <a href="/tags" class="btn btn--outline">← Ver todos los tags</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .tag-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-4);
+  }
+
+  .breadcrumb-link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--color-green);
+    text-shadow: none;
+  }
+
+  .tag--active {
+    background: rgba(0, 255, 65, 0.15);
+    border-color: var(--color-green);
+    color: var(--color-green);
+  }
+
+  .back-link {
+    margin-top: var(--space-12);
+  }
+</style>

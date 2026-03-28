@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BlogPostCard from '../components/BlogPostCard.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = (await getCollection('blog'))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+---
+
+<BaseLayout
+  title="NosDicenGeeks"
+  description="Blog de tecnología y cultura geek. Reviews, tutoriales y opinión sin filtros corporativos."
+>
+  <section class="hero">
+    <div class="container">
+      <h1 class="hero__title">
+        Bienvenido a <span class="accent">NosDicenGeeks</span>
+      </h1>
+      <p class="hero__subtitle">
+        Tecnología, cultura geek y todo lo que el mundo tech nos dice… a nuestra manera.
+      </p>
+      <a href="/blog" class="btn btn--primary">Leer el blog</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <h2 class="section__title">Últimas entradas</h2>
+        <p class="section__subtitle">Lo más reciente del universo geek</p>
+      </div>
+
+      {allPosts.length > 0 ? (
+        <div class="posts-grid">
+          {allPosts.map(post => (
+            <BlogPostCard
+              title={post.data.title}
+              description={post.data.description}
+              pubDate={post.data.pubDate}
+              tags={post.data.tags}
+              slug={post.id}
+              image={post.data.image}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="no-posts">// Próximamente — el blog está en construcción.</p>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .no-posts {
+    font-family: var(--font-code);
+    color: var(--color-text-faint);
+    padding: var(--space-8) 0;
+  }
+</style>

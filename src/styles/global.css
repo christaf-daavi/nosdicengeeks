@@ -1,0 +1,631 @@
+/* ============================================================
+   NosDicenGeeks — Design System
+   Global CSS | Dark mode by default | Cyberpunk/Tech aesthetic
+   ============================================================ */
+
+/* ─── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --color-bg:          #0D1117;
+  --color-bg-card:     #161B22;
+  --color-bg-elevated: #1C2128;
+  --color-bg-code:     #010409;
+
+  /* Text */
+  --color-text:        #C9D1D9;
+  --color-text-muted:  #8B949E;
+  --color-text-faint:  #484F58;
+
+  /* Accents */
+  --color-green:       #00FF41;
+  --color-green-dim:   #00cc33;
+  --color-blue:        #0496FF;
+  --color-danger:      #D81159;
+  --color-yellow:      #FBBC42;
+
+  /* Borders */
+  --color-border:      #30363D;
+  --color-border-muted:#21262D;
+
+  /* Typography */
+  --font-heading: 'Fira Code', 'Courier New', monospace;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-code:    'Fira Code', 'Courier New', monospace;
+
+  /* Sizing */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+
+  /* Spacing */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Layout */
+  --max-width:      1200px;
+  --header-height:  64px;
+
+  /* Effects */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --blur-glass: blur(12px);
+
+  --glow-green: 0 0 12px rgba(0, 255, 65, 0.4), 0 0 24px rgba(0, 255, 65, 0.15);
+  --glow-blue:  0 0 12px rgba(4, 150, 255, 0.4), 0 0 24px rgba(4, 150, 255, 0.15);
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.6);
+
+  --transition: 200ms ease;
+}
+
+/* ─── Modern CSS Reset ──────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+}
+
+/* ─── Base Styles ────────────────────────────────────────────── */
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: var(--text-4xl); }
+h2 { font-size: var(--text-3xl); }
+h3 { font-size: var(--text-2xl); }
+h4 { font-size: var(--text-xl); }
+h5 { font-size: var(--text-lg); }
+h6 { font-size: var(--text-base); }
+
+/* Green accent on first character of h1 — terminal prompt effect */
+h1::before {
+  content: '> ';
+  color: var(--color-green);
+  font-weight: 300;
+}
+
+p {
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+/* ─── Links ──────────────────────────────────────────────────── */
+a {
+  color: var(--color-blue);
+  text-decoration: none;
+  transition: color var(--transition), text-shadow var(--transition);
+}
+
+a:hover {
+  color: var(--color-green);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Layout Container ───────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-6);
+}
+
+/* ─── Header — Glassmorphism Sticky ─────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  background: rgba(13, 17, 23, 0.75);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition), box-shadow var(--transition);
+}
+
+.site-header.scrolled {
+  background: rgba(13, 17, 23, 0.95);
+  box-shadow: 0 1px 0 var(--color-border), 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.site-logo {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.site-logo span {
+  color: var(--color-green);
+}
+
+.site-logo:hover {
+  color: var(--color-green);
+  text-shadow: var(--glow-green);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  list-style: none;
+}
+
+.site-nav a {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color var(--transition);
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
+  color: var(--color-green);
+  text-shadow: none;
+}
+
+/* ─── Post Cards Grid ────────────────────────────────────────── */
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+  padding-block: var(--space-8);
+}
+
+/* Featured post — full width */
+.posts-grid .post-card:first-child {
+  grid-column: 1 / -1;
+}
+
+/* ─── Post Card ──────────────────────────────────────────────── */
+.post-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition);
+  text-decoration: none;
+  color: inherit;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover), var(--glow-green);
+  border-color: var(--color-green);
+}
+
+/* Corner accent — ciberpunk bracket effect */
+.post-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-top: 2px solid var(--color-green);
+  border-left: 2px solid var(--color-green);
+  border-radius: var(--radius-lg) 0 0 0;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.post-card:hover::before {
+  opacity: 1;
+}
+
+.post-card__image {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  object-fit: cover;
+  background: var(--color-bg-elevated);
+}
+
+.post-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--space-6);
+  gap: var(--space-3);
+}
+
+.post-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tag {
+  font-family: var(--font-code);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 255, 65, 0.1);
+  color: var(--color-green);
+  border: 1px solid rgba(0, 255, 65, 0.25);
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+
+.tag:hover {
+  background: rgba(0, 255, 65, 0.2);
+  box-shadow: var(--glow-green);
+}
+
+.tag--danger {
+  background: rgba(216, 17, 89, 0.1);
+  color: var(--color-danger);
+  border-color: rgba(216, 17, 89, 0.25);
+}
+
+.tag--blue {
+  background: rgba(4, 150, 255, 0.1);
+  color: var(--color-blue);
+  border-color: rgba(4, 150, 255, 0.25);
+}
+
+.tag--yellow {
+  background: rgba(251, 188, 66, 0.1);
+  color: var(--color-yellow);
+  border-color: rgba(251, 188, 66, 0.25);
+}
+
+.post-card__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+  transition: color var(--transition);
+}
+
+.post-card__title::before {
+  content: none; /* override h* default */
+}
+
+.post-card:hover .post-card__title {
+  color: var(--color-green);
+}
+
+.post-card__excerpt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.post-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-muted);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  font-family: var(--font-code);
+}
+
+.post-card__date::before {
+  content: '// ';
+  color: var(--color-green-dim);
+}
+
+/* ─── Code Blocks — Terminal aesthetic ──────────────────────── */
+pre {
+  position: relative;
+  background: var(--color-bg-code);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  padding-top: calc(var(--space-8) + var(--space-2));
+  overflow-x: auto;
+  margin-block: var(--space-6);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  box-shadow: 0 0 0 1px var(--color-border-muted), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* Traffic light bar */
+pre::before {
+  content: '● ● ●';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  font-size: 10px;
+  letter-spacing: 4px;
+  /* red / yellow / green */
+  background-image: radial-gradient(circle 5px at 16px 50%, #FF5F57 100%, transparent 100%),
+                    radial-gradient(circle 5px at 34px 50%, #FEBC2E 100%, transparent 100%),
+                    radial-gradient(circle 5px at 52px 50%, #28C840 100%, transparent 100%);
+  background-repeat: no-repeat;
+  color: transparent;
+  height: 32px;
+}
+
+code {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  color: var(--color-green);
+}
+
+/* Inline code (not inside pre) */
+:not(pre) > code {
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  color: var(--color-green);
+}
+
+pre code {
+  color: var(--color-text);
+  font-size: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ─── Sections ───────────────────────────────────────────────── */
+.section {
+  padding-block: var(--space-16);
+}
+
+.section__header {
+  margin-bottom: var(--space-8);
+}
+
+.section__title {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+}
+
+.section__subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+/* ─── Hero ────────────────────────────────────────────────────── */
+.hero {
+  padding-block: var(--space-24) var(--space-16);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle scanline overlay */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.015) 2px,
+    rgba(0, 255, 65, 0.015) 4px
+  );
+  pointer-events: none;
+}
+
+.hero__title {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  margin-bottom: var(--space-4);
+}
+
+.hero__title::before {
+  content: none;
+}
+
+.hero__title .accent {
+  color: var(--color-green);
+  text-shadow: var(--glow-green);
+}
+
+.hero__subtitle {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  max-width: 600px;
+  margin-inline: auto;
+  margin-bottom: var(--space-8);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+  text-decoration: none;
+}
+
+.btn--primary {
+  background: var(--color-green);
+  color: var(--color-bg);
+}
+
+.btn--primary:hover {
+  background: var(--color-green-dim);
+  box-shadow: var(--glow-green);
+  color: var(--color-bg);
+}
+
+.btn--outline {
+  background: transparent;
+  color: var(--color-green);
+  border: 1px solid var(--color-green);
+}
+
+.btn--outline:hover {
+  background: rgba(0, 255, 65, 0.1);
+  box-shadow: var(--glow-green);
+  color: var(--color-green);
+}
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  padding-block: var(--space-8);
+  text-align: center;
+  font-family: var(--font-code);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.site-footer a {
+  color: var(--color-text-muted);
+}
+
+.site-footer a:hover {
+  color: var(--color-green);
+}
+
+/* ─── Scrollbar (Webkit) ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-green-dim);
+}
+
+/* ─── Selection ──────────────────────────────────────────────── */
+::selection {
+  background: rgba(0, 255, 65, 0.25);
+  color: var(--color-text);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+
+  .posts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .posts-grid .post-card:first-child {
+    grid-column: auto;
+  }
+
+  .site-nav {
+    gap: var(--space-4);
+  }
+
+  .hero {
+    padding-block: var(--space-16) var(--space-8);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-inline: var(--space-4);
+  }
+
+  .post-card__body {
+    padding: var(--space-4);
+  }
+}

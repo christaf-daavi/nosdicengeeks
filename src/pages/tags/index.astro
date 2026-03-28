@@ -1,0 +1,122 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+// Build tag map: tag -> post count
+const tagMap = posts.reduce<Record<string, number>>((acc, post) => {
+  post.data.tags.forEach(tag => {
+    acc[tag] = (acc[tag] ?? 0) + 1;
+  });
+  return acc;
+}, {});
+
+// Sort alphabetically
+const tags = Object.entries(tagMap).sort(([a], [b]) => a.localeCompare(b));
+
+// Scale font size by frequency (min 0.85rem → max 1.5rem)
+const counts = Object.values(tagMap);
+const minCount = Math.min(...counts);
+const maxCount = Math.max(...counts);
+
+function tagSize(count: number): string {
+  if (maxCount === minCount) return '1rem';
+  const scale = (count - minCount) / (maxCount - minCount);
+  const size = 0.85 + scale * 0.65;
+  return `${size.toFixed(2)}rem`;
+}
+---
+
+<BaseLayout
+  title="Tags — NosDicenGeeks"
+  description="Todos los temas del blog: tecnología, videojuegos, programación y cultura geek."
+>
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <h1 class="section__title">Tags</h1>
+        <p class="section__subtitle">
+          {tags.length} {tags.length === 1 ? 'tema' : 'temas'} en el blog
+        </p>
+      </div>
+
+      {tags.length > 0 ? (
+        <div class="tag-cloud" role="list" aria-label="Nube de tags">
+          {tags.map(([tag, count]) => (
+            <a
+              href={`/tags/${tag}`}
+              class="tag-cloud__item"
+              role="listitem"
+              style={`font-size: ${tagSize(count)}`}
+              title={`${count} ${count === 1 ? 'post' : 'posts'}`}
+            >
+              #{tag}
+              <span class="tag-cloud__count">{count}</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="empty-state">// No hay tags todavía.</p>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    padding-block: var(--space-4);
+  }
+
+  .tag-cloud__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    font-family: var(--font-code);
+    font-weight: 500;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: rgba(0, 255, 65, 0.06);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    transition:
+      color var(--transition),
+      background var(--transition),
+      border-color var(--transition),
+      box-shadow var(--transition),
+      transform var(--transition);
+    line-height: 1;
+  }
+
+  .tag-cloud__item:hover {
+    color: var(--color-green);
+    background: rgba(0, 255, 65, 0.12);
+    border-color: var(--color-green);
+    box-shadow: var(--glow-green);
+    transform: translateY(-2px);
+    text-shadow: none;
+  }
+
+  .tag-cloud__count {
+    font-size: 0.7em;
+    color: var(--color-text-faint);
+    font-weight: 400;
+    transition: color var(--transition);
+  }
+
+  .tag-cloud__item:hover .tag-cloud__count {
+    color: var(--color-green-dim);
+  }
+
+  .empty-state {
+    font-family: var(--font-code);
+    color: var(--color-text-faint);
+    padding: var(--space-16) 0;
+    text-align: center;
+  }
+</style>

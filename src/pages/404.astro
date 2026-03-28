@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="404 — NosDicenGeeks"
+  description="Esta página no existe. Quizás fue borrada, movida o nunca existió en esta realidad."
+>
+  <section class="error-section">
+    <div class="container">
+
+      <div class="terminal-window">
+        <div class="terminal-bar">
+          <span class="terminal-dot dot--red"></span>
+          <span class="terminal-dot dot--yellow"></span>
+          <span class="terminal-dot dot--green"></span>
+          <span class="terminal-title">bash — nosdicengeeks</span>
+        </div>
+
+        <div class="terminal-body">
+          <p class="terminal-line">
+            <span class="t-prompt">nosdicengeeks@blog:~$</span>
+            <span class="t-cmd"> curl -s http://dev.nosdicengeeks.com{Astro.url.pathname}</span>
+          </p>
+
+          <div class="terminal-output">
+            <p class="t-error">HTTP/1.1 404 Not Found</p>
+            <p class="t-key">Content-Type: <span class="t-val">text/html; charset=utf-8</span></p>
+            <p class="t-key">X-Error: <span class="t-val">Page not found in the matrix</span></p>
+            <p class="t-key">X-Suggestion: <span class="t-val">Have you tried turning it off and on again?</span></p>
+          </div>
+
+          <div class="error-code" aria-label="Error 404">
+            <span class="error-digit">4</span>
+            <span class="error-digit error-digit--accent">0</span>
+            <span class="error-digit">4</span>
+          </div>
+
+          <p class="error-message">
+            <span class="t-comment">// </span>Esta página no existe en ningún namespace conocido.
+          </p>
+          <p class="error-submessage">
+            Fue eliminada, movida o nunca existió en esta dimensión del stack.
+          </p>
+
+          <p class="terminal-line terminal-line--blink">
+            <span class="t-prompt">nosdicengeeks@blog:~$</span>
+            <span class="cursor" aria-hidden="true">█</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="error-actions">
+        <a href="/" class="btn btn--primary">cd ~/ → Volver al inicio</a>
+        <a href="/blog" class="btn btn--outline">ls blog/ → Ver el blog</a>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .error-section {
+    display: flex;
+    align-items: center;
+    min-height: calc(100vh - var(--header-height) - 120px);
+    padding-block: var(--space-16);
+  }
+
+  .terminal-window {
+    max-width: 680px;
+    margin-inline: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-card), 0 0 40px rgba(0, 255, 65, 0.06);
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .dot--red    { background: #FF5F57; }
+  .dot--yellow { background: #FEBC2E; }
+  .dot--green  { background: #28C840; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+    margin-right: 52px; /* offset the dots */
+  }
+
+  .terminal-body {
+    background: var(--color-bg-code);
+    padding: var(--space-6);
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    line-height: 1.8;
+  }
+
+  .terminal-line {
+    margin-bottom: var(--space-2);
+  }
+
+  .t-prompt { color: var(--color-green); }
+  .t-cmd    { color: var(--color-text-muted); }
+
+  .terminal-output {
+    margin-block: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-left: 2px solid var(--color-border);
+  }
+
+  .t-error { color: var(--color-danger); font-weight: 500; margin-bottom: var(--space-1); }
+  .t-key   { color: var(--color-text-faint); }
+  .t-val   { color: var(--color-yellow); }
+  .t-comment { color: var(--color-green-dim); }
+
+  /* Big 404 number */
+  .error-code {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-block: var(--space-6);
+  }
+
+  .error-digit {
+    font-size: clamp(4rem, 12vw, 7rem);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-text-faint);
+    line-height: 1;
+    text-shadow: none;
+  }
+
+  .error-digit--accent {
+    color: var(--color-green);
+    text-shadow: var(--glow-green);
+  }
+
+  .error-message {
+    text-align: center;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+  }
+
+  .error-submessage {
+    text-align: center;
+    color: var(--color-text-faint);
+    font-size: var(--text-xs);
+    margin-bottom: var(--space-6);
+  }
+
+  /* Blinking cursor */
+  .cursor {
+    display: inline-block;
+    color: var(--color-green);
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  .error-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    flex-wrap: wrap;
+  }
+</style>

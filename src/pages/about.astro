@@ -1,0 +1,261 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About — NosDicenGeeks"
+  description="Quiénes somos, qué hacemos y por qué el mundo necesita otro blog de tecnología hecho por geeks de verdad."
+>
+  <section class="section">
+    <div class="container about-container">
+
+      <header class="about-header">
+        <div class="about-prompt">
+          <span class="prompt-user">nosdicengeeks</span>
+          <span class="prompt-sep">@</span>
+          <span class="prompt-host">blog</span>
+          <span class="prompt-sep">:~$</span>
+          <span class="prompt-cmd"> cat about.md</span>
+        </div>
+        <h1 class="about-title">Sobre NosDicenGeeks</h1>
+      </header>
+
+      <div class="about-body prose">
+
+        <h2>¿Qué es este lugar?</h2>
+        <p>
+          NosDicenGeeks es un blog de tecnología y cultura geek escrito por personas
+          que viven, respiran y a veces maldice la tecnología. No somos una empresa,
+          no tenemos equipo de PR y nadie nos paga por decir que cierto producto es
+          "revolucionario".
+        </p>
+        <p>
+          Escribimos lo que nos interesa, cuando nos interesa, como nos interesa.
+        </p>
+
+        <h2>¿De qué hablamos?</h2>
+        <ul>
+          <li><strong>Tecnología</strong> — hardware, software, Linux, open source, web dev</li>
+          <li><strong>Videojuegos</strong> — reviews honestas, análisis de industria, retrocomputación</li>
+          <li><strong>Programación</strong> — tutoriales, arquitectura, herramientas del oficio</li>
+          <li><strong>Cultura geek</strong> — anime, ciencia ficción, comics, películas y series tech</li>
+          <li><strong>Opinión</strong> — lo que pensamos del estado del mundo digital, sin filtros</li>
+        </ul>
+
+        <h2>Stack técnico del blog</h2>
+        <p>
+          Somos transparentes con las herramientas que usamos. Este blog está construido con:
+        </p>
+
+        <pre><code># Stack de NosDicenGeeks
+framework:  Astro 6
+lenguaje:   TypeScript (strict mode)
+estilos:    CSS puro con custom properties
+fuentes:    Fira Code + Inter (Google Fonts)
+despliegue: Static hosting
+contenido:  Markdown + Content Collections</code></pre>
+
+        <p>
+          Elegimos Astro porque genera HTML estático, tiene cero JavaScript por defecto
+          y nos deja escribir componentes limpios. El resultado: un blog rápido, accesible
+          y que no le envía telemetría a nadie.
+        </p>
+
+        <h2>La filosofía</h2>
+        <blockquote>
+          Si no podemos explicarlo de forma que un humano lo entienda, probablemente
+          tampoco lo entendemos nosotros.
+        </blockquote>
+        <p>
+          Huimos del contenido vacío, los listicles sin sustancia y las reseñas pagadas.
+          Cada post tiene que pasar una prueba simple: <em>¿vale la pena que alguien
+          invierta su tiempo en leerlo?</em>
+        </p>
+
+        <h2>Contacto</h2>
+        <p>
+          Nos encontrás en Twitter/X como
+          <a href="https://twitter.com/nosdicengeeks" target="_blank" rel="noopener noreferrer">@nosdicengeeks</a>
+          y el código del blog está en
+          <a href="https://github.com/nosdicengeeks" target="_blank" rel="noopener noreferrer">GitHub</a>.
+        </p>
+        <p>
+          Si encontraste un error, tenés una sugerencia o simplemente querés hablar
+          de tecnología: los DMs están abiertos.
+        </p>
+
+      </div>
+
+      <div class="about-footer">
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat__value">∞</span>
+            <span class="stat__label">// tabs abiertos</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">☕</span>
+            <span class="stat__label">// combustible principal</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">01</span>
+            <span class="stat__label">// modo de operación</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">100%</span>
+            <span class="stat__label">// opiniones propias</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .about-container {
+    max-width: 780px;
+  }
+
+  /* Terminal prompt header */
+  .about-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .about-prompt {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+    opacity: 0.7;
+  }
+
+  .prompt-user  { color: var(--color-green); }
+  .prompt-sep   { color: var(--color-text-faint); }
+  .prompt-host  { color: var(--color-blue); }
+  .prompt-cmd   { color: var(--color-text-muted); }
+
+  .about-title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  /* Prose inherited from PostLayout pattern, scoped here */
+  .about-body {
+    font-size: var(--text-lg);
+    line-height: 1.8;
+  }
+
+  .about-body :global(h2) {
+    font-size: var(--text-2xl);
+    margin-top: var(--space-12);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border-muted);
+  }
+
+  .about-body :global(h2::before) {
+    content: '## ';
+    color: var(--color-green);
+    opacity: 0.6;
+    font-weight: 300;
+  }
+
+  .about-body :global(p) {
+    margin-bottom: var(--space-6);
+    color: var(--color-text);
+  }
+
+  .about-body :global(ul) {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .about-body :global(li) {
+    margin-bottom: var(--space-2);
+  }
+
+  .about-body :global(ul li::marker) {
+    color: var(--color-green);
+  }
+
+  .about-body :global(strong) {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .about-body :global(em) {
+    color: var(--color-text-muted);
+  }
+
+  .about-body :global(blockquote) {
+    border-left: 3px solid var(--color-green);
+    padding: var(--space-3) var(--space-6);
+    margin-block: var(--space-6);
+    background: rgba(0, 255, 65, 0.04);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .about-body :global(blockquote p) {
+    margin-bottom: 0;
+  }
+
+  .about-body :global(a) {
+    color: var(--color-blue);
+    text-underline-offset: 3px;
+  }
+
+  .about-body :global(a:hover) {
+    color: var(--color-green);
+    text-shadow: none;
+  }
+
+  /* Stats grid */
+  .about-footer {
+    margin-top: var(--space-16);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  .stat:hover {
+    border-color: var(--color-green);
+    box-shadow: var(--glow-green);
+  }
+
+  .stat__value {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-green);
+  }
+
+  .stat__label {
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+  }
+
+  @media (max-width: 768px) {
+    .about-body {
+      font-size: var(--text-base);
+    }
+  }
+</style>

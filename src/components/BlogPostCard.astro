@@ -1,0 +1,96 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  pubDate: Date;
+  tags: string[];
+  slug: string;
+  image?: { src: string; alt: string };
+}
+
+const { title, description, pubDate, tags, slug, image } = Astro.props;
+
+const formattedDate = pubDate.toLocaleDateString('es-ES', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+
+const isoDate = pubDate.toISOString();
+
+// Tag color cycling: first tag uses default green, rest rotate through variants
+const tagVariants = ['', ' tag--blue', ' tag--yellow', ' tag--danger'];
+---
+
+<article class="post-card">
+  <a href={`/blog/${slug}`} class="post-card__link" aria-label={`Leer: ${title}`}>
+
+    {image && (
+      <img
+        src={image.src}
+        alt={image.alt}
+        class="post-card__image"
+        loading="lazy"
+        decoding="async"
+        width="800"
+        height="450"
+      />
+    )}
+
+    <div class="post-card__body">
+      {tags.length > 0 && (
+        <div class="post-card__tags" aria-label="Etiquetas">
+          {tags.slice(0, 4).map((tag, i) => (
+            <span class={`tag${tagVariants[i % tagVariants.length]}`}>
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <h3 class="post-card__title">{title}</h3>
+
+      <p class="post-card__excerpt">{description}</p>
+
+      <div class="post-card__meta">
+        <time class="post-card__date" datetime={isoDate}>{formattedDate}</time>
+        <span class="post-card__read-more" aria-hidden="true">leer →</span>
+      </div>
+    </div>
+
+  </a>
+</article>
+
+<style>
+  /* Make the entire card a clickable surface */
+  .post-card__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Override global a:hover glow — card handles its own hover */
+  .post-card__link:hover {
+    text-shadow: none;
+    color: inherit;
+  }
+
+  .post-card__read-more {
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+    transition: color var(--transition);
+    white-space: nowrap;
+  }
+
+  .post-card:hover .post-card__read-more {
+    color: var(--color-green);
+  }
+
+  /* Ensure h3 inside card never shows the ::before prompt */
+  .post-card__title::before {
+    content: none !important;
+  }
+</style>
