@@ -1,4 +1,6 @@
 ---
+import TagBadge from './TagBadge.astro';
+
 interface Props {
   title: string;
   description: string;
@@ -17,33 +19,31 @@ const formattedDate = pubDate.toLocaleDateString('es-ES', {
 });
 
 const isoDate = pubDate.toISOString();
-
-// Tag color cycling: first tag uses default green, rest rotate through variants
-const tagVariants = ['', ' tag--blue', ' tag--yellow', ' tag--danger'];
 ---
 
 <article class="post-card">
-  <a href={`/blog/${slug}`} class="post-card__link" aria-label={`Leer: ${title}`}>
+  <a href={`/posts/${slug}`} class="post-card__link" aria-label={`Leer: ${title}`}>
 
     {image && (
-      <img
-        src={image.src}
-        alt={image.alt}
-        class="post-card__image"
-        loading="lazy"
-        decoding="async"
-        width="800"
-        height="450"
-      />
+      <div class="post-card__image-wrapper">
+        <img
+          src={image.src}
+          alt={image.alt}
+          class="post-card__image"
+          loading="lazy"
+          decoding="async"
+          width="800"
+          height="450"
+          sizes="(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
+      </div>
     )}
 
     <div class="post-card__body">
       {tags.length > 0 && (
         <div class="post-card__tags" aria-label="Etiquetas">
           {tags.slice(0, 4).map((tag, i) => (
-            <span class={`tag${tagVariants[i % tagVariants.length]}`}>
-              #{tag}
-            </span>
+            <TagBadge tag={tag} index={i} />
           ))}
         </div>
       )}
@@ -53,7 +53,7 @@ const tagVariants = ['', ' tag--blue', ' tag--yellow', ' tag--danger'];
       <p class="post-card__excerpt">{description}</p>
 
       <div class="post-card__meta">
-        <time class="post-card__date" datetime={isoDate}>{formattedDate}</time>
+        <time class="post-card__date" datetime={isoDate}>Publicado el {formattedDate}</time>
         <span class="post-card__read-more" aria-hidden="true">leer →</span>
       </div>
     </div>
@@ -79,14 +79,18 @@ const tagVariants = ['', ' tag--blue', ' tag--yellow', ' tag--danger'];
 
   .post-card__read-more {
     font-family: var(--font-code);
-    font-size: var(--text-xs);
-    color: var(--color-text-faint);
-    transition: color var(--transition);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: #ffffff;
+    background: var(--color-primary);
+    padding: 6px 16px;
+    border-radius: 4px;
     white-space: nowrap;
+    transition: background var(--transition);
   }
 
   .post-card:hover .post-card__read-more {
-    color: var(--color-green);
+    background: #006ba6;
   }
 
   /* Ensure h3 inside card never shows the ::before prompt */

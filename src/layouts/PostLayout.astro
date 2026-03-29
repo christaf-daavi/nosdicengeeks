@@ -2,6 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import TagBadge from '../components/TagBadge.astro';
 
 interface Props {
   title: string;
@@ -49,7 +50,7 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
               loading="eager"
               decoding="async"
               width="1200"
-              height="630"
+              height="400"
             />
           </div>
         )}
@@ -60,8 +61,8 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
           <header class="post-header">
             {tags.length > 0 && (
               <div class="post-tags">
-                {tags.map(tag => (
-                  <a href={`/tags/${tag}`} class="tag">#{tag}</a>
+                {tags.map((tag, i) => (
+                  <TagBadge tag={tag} index={i} href={`/tags/${tag}`} />
                 ))}
               </div>
             )}
@@ -103,11 +104,11 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
           <footer class="post-footer">
             <div class="post-footer__tags">
               <span class="meta-label">// tags</span>
-              {tags.map(tag => (
-                <a href={`/tags/${tag}`} class="tag">#{tag}</a>
+              {tags.map((tag, i) => (
+                <TagBadge tag={tag} index={i} href={`/tags/${tag}`} />
               ))}
             </div>
-            <a href="/blog" class="btn btn--outline post-footer__back">← Volver al blog</a>
+            <a href="/" class="btn btn--outline post-footer__back">← Volver al inicio</a>
           </footer>
 
         </div>
@@ -122,19 +123,22 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
   /* ── Post layout ────────────────────────────────────────── */
   .post-hero {
     width: 100%;
-    max-height: 480px;
+    height: 400px;
     overflow: hidden;
-    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-6);
   }
 
   .post-hero__img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center top;
   }
 
   .post-container {
     max-width: 780px;
+    padding-bottom: 3rem;
   }
 
   .post-header {
@@ -150,9 +154,12 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
     margin-bottom: var(--space-4);
   }
 
-  .post-tags .tag {
+  .post-tags :global(.tag) {
     text-decoration: none;
-    transition: box-shadow var(--transition), background var(--transition);
+  }
+
+  .post-footer__tags :global(.tag) {
+    text-decoration: none;
   }
 
   .post-title {
@@ -181,25 +188,28 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
     gap: var(--space-2) var(--space-4);
     font-family: var(--font-code);
     font-size: var(--text-xs);
-    color: var(--color-text-muted);
+    color: var(--color-text);
+    opacity: 0.8;
   }
 
   .meta-label {
-    color: var(--color-green-dim);
+    color: var(--color-green);
+    opacity: 0.7;
     margin-right: var(--space-1);
   }
 
   .post-meta a {
-    color: var(--color-text-muted);
+    color: var(--color-text);
+    opacity: 0.85;
   }
 
   .post-meta a:hover {
-    color: var(--color-green);
+    opacity: 1;
     text-shadow: none;
   }
 
   .post-meta__sep {
-    color: var(--color-text-faint);
+    opacity: 0.4;
   }
 
   /* ── Prose — article body typography ────────────────────── */
@@ -250,13 +260,17 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-color: rgba(4, 150, 255, 0.4);
-    transition: color var(--transition), text-decoration-color var(--transition);
+    transition: opacity var(--transition);
   }
 
   .prose :global(a:hover) {
-    color: var(--color-green);
-    text-decoration-color: rgba(0, 255, 65, 0.4);
+    opacity: 0.8;
     text-shadow: none;
+  }
+
+  :global([data-theme="light"]) .prose :global(a) {
+    color: var(--color-dark-blue);
+    text-decoration-color: rgba(0, 107, 166, 0.4);
   }
 
   .prose :global(ul),
@@ -348,6 +362,7 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
     flex-wrap: wrap;
     gap: var(--space-4);
     margin-top: var(--space-12);
+    margin-bottom: 4rem;
     padding-top: var(--space-8);
     border-top: 1px solid var(--color-border);
   }
@@ -366,6 +381,10 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
   }
 
   @media (max-width: 768px) {
+    .post-hero {
+      height: 220px;
+    }
+
     .post-header {
       padding-block: var(--space-8) var(--space-6);
     }
@@ -377,6 +396,7 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
     .post-footer {
       flex-direction: column;
       align-items: flex-start;
+      margin-bottom: 2.5rem;
     }
   }
 </style>

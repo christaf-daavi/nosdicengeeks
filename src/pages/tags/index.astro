@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import TagBadge from '../../components/TagBadge.astro';
 import { getCollection } from 'astro:content';
 
 const posts = await getCollection('blog', ({ data }) => !data.draft);
@@ -43,17 +44,10 @@ function tagSize(count: number): string {
 
       {tags.length > 0 ? (
         <div class="tag-cloud" role="list" aria-label="Nube de tags">
-          {tags.map(([tag, count]) => (
-            <a
-              href={`/tags/${tag}`}
-              class="tag-cloud__item"
-              role="listitem"
-              style={`font-size: ${tagSize(count)}`}
-              title={`${count} ${count === 1 ? 'post' : 'posts'}`}
-            >
-              #{tag}
-              <span class="tag-cloud__count">{count}</span>
-            </a>
+          {tags.map(([tag, count], i) => (
+            <span role="listitem" style={`font-size: ${tagSize(count)}`} title={`${count} ${count === 1 ? 'post' : 'posts'}`}>
+              <TagBadge tag={tag} index={i} href={`/tags/${tag}`} count={count} />
+            </span>
           ))}
         </div>
       ) : (

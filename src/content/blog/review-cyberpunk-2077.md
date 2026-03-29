@@ -6,8 +6,8 @@ updatedDate: 2026-03-27
 tags: ["videojuegos", "review", "rpg", "cd-projekt-red", "cyberpunk"]
 author: "NosDicenGeeks"
 image:
-  src: "/images/cyberpunk-2077-review.jpg"
-  alt: "Vista nocturna de Night City con neones azules y rojos reflejados en el asfalto mojado"
+  src: "/images/cyberpunk-2077-review.webp"
+  alt: "Imagen de portada de la review de Cyberpunk 2077 con degradado en tonos fucsia y magenta"
 draft: false
 ---
 

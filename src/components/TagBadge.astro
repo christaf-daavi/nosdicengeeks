@@ -1,0 +1,35 @@
+---
+interface Props {
+  tag: string;
+  /** Position index for color cycling (0-based). Default: 0 */
+  index?: number;
+  /** If provided, renders as <a> linking to this URL */
+  href?: string;
+  /** Optional post count shown inline */
+  count?: number;
+}
+
+const { tag, index = 0, href, count } = Astro.props;
+
+const variants = ['tag--blue', 'tag--yellow', 'tag--danger', 'tag--purple'];
+const cls = `tag tag--${variants[index % variants.length]}`;
+---
+
+{href ? (
+  <a href={href} class={cls}>
+    #{tag}{count !== undefined && <span class="tag-count">{count}</span>}
+  </a>
+) : (
+  <span class={cls}>
+    #{tag}
+  </span>
+)}
+
+<style>
+  .tag-count {
+    font-size: 0.7em;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-left: 0.2em;
+  }
+</style>

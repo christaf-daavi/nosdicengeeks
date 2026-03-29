@@ -5,8 +5,8 @@ pubDate: 2026-03-27
 tags: ["meta", "bienvenida", "comunidad", "geek"]
 author: "NosDicenGeeks"
 image:
-  src: "/images/bienvenidos-cover.jpg"
-  alt: "Terminal con el mensaje Welcome to NosDicenGeeks en verde sobre fondo negro"
+  src: "/images/bienvenidos-cover.webp"
+  alt: "Imagen de portada de NosDicenGeeks con degradado azul y el lema El blog geek en tu idioma"
 draft: false
 ---
 

@@ -20,7 +20,29 @@ const allPosts = (await getCollection('blog'))
       <p class="hero__subtitle">
         Tecnología, cultura geek y todo lo que el mundo tech nos dice… a nuestra manera.
       </p>
-      <a href="/blog" class="btn btn--primary">Leer el blog</a>
+    </div>
+  </section>
+
+  <section class="topics">
+    <div class="container">
+      <h2 class="topics__title">¿De qué hablamos?</h2>
+      <div class="topics__grid">
+        <div class="topic-card">
+          <span class="topic-card__icon">📱</span>
+          <h3 class="topic-card__name">Tecnología</h3>
+          <p class="topic-card__desc">Lo último en tech, gadgets y software</p>
+        </div>
+        <div class="topic-card">
+          <span class="topic-card__icon">🎮</span>
+          <h3 class="topic-card__name">Videojuegos</h3>
+          <p class="topic-card__desc">Reviews, análisis y noticias gaming</p>
+        </div>
+        <div class="topic-card">
+          <span class="topic-card__icon">🎬</span>
+          <h3 class="topic-card__name">Cultura Geek</h3>
+          <p class="topic-card__desc">Cine, series, anime y más</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -56,5 +78,60 @@ const allPosts = (await getCollection('blog'))
     font-family: var(--font-code);
     color: var(--color-text-faint);
     padding: var(--space-8) 0;
+  }
+
+  /* ── Topics strip ───────────────────────────────────────── */
+  .topics {
+    background: #fbbc42;
+    padding: 4rem 0;
+  }
+
+  .topics__title {
+    color: #0a0f1a;
+    text-align: center;
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-8);
+  }
+
+  .topics__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .topic-card {
+    text-align: center;
+    padding: var(--space-6);
+  }
+
+  .topic-card__icon {
+    display: block;
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: var(--space-4);
+  }
+
+  .topic-card__name {
+    color: #0a0f1a;
+    font-size: var(--text-xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+  }
+
+  .topic-card__name::before {
+    content: none;
+  }
+
+  .topic-card__desc {
+    color: #0a0f1a;
+    font-size: var(--text-base);
+    opacity: 0.75;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 768px) {
+    .topics__grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

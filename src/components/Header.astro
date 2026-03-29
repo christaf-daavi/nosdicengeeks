@@ -1,9 +1,8 @@
 ---
 const navLinks = [
-  { href: '/',       label: 'Inicio' },
-  { href: '/blog',   label: 'Blog'   },
-  { href: '/tags',   label: 'Tags'   },
-  { href: '/about',  label: 'About'  },
+  { href: '/',       label: 'Inicio'    },
+  { href: '/tags',   label: 'Etiquetas' },
+  { href: '/about',  label: 'Nosotros'  },
 ];
 
 const currentPath = Astro.url.pathname;
@@ -12,7 +11,7 @@ const currentPath = Astro.url.pathname;
 <header class="site-header" id="site-header">
   <div class="container">
     <a href="/" class="site-logo" aria-label="NosDicenGeeks — inicio">
-      <span class="logo-bracket">[</span>Nos<span>Dicen</span>Geeks<span class="logo-bracket">]</span>
+      <img src="/images/logo.svg" alt="NosDicenGeeks" class="logo-img" width="72" height="72" />
     </a>
 
     <nav aria-label="Navegación principal">
@@ -92,7 +91,7 @@ const currentPath = Astro.url.pathname;
     background: transparent;
     color: var(--color-text-muted);
     cursor: pointer;
-    transition: color var(--transition), border-color var(--transition), box-shadow var(--transition);
+    transition: color var(--transition), opacity var(--transition);
     flex-shrink: 0;
   }
 
@@ -113,13 +112,18 @@ const currentPath = Astro.url.pathname;
     display: none;
   }
 
-  .logo-bracket {
-    color: var(--color-green);
-    font-weight: 300;
+  .logo-img {
+    height: 72px;
+    width: auto;
+    display: block;
+    background: transparent;
   }
 
-  /* Mobile nav */
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
+    .logo-img {
+      height: 64px;
+    }
+
     .site-nav {
       display: none;
     }
