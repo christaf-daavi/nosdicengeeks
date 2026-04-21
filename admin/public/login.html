@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingresar — NosDicenGeeks Admin</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="login-page">
+
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-brand__icon">G</div>
+      <div class="login-brand__title">NosDicenGeeks</div>
+      <div class="login-brand__sub">Panel de administración</div>
+    </div>
+
+    <div id="alert" class="alert alert-error" role="alert"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="username">Usuario</label>
+        <input type="text" id="username" name="username"
+               autocomplete="username" placeholder="admin" required />
+        <span class="field-error" id="err-username"></span>
+      </div>
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password"
+               autocomplete="current-password" placeholder="••••••••" required />
+        <span class="field-error" id="err-password"></span>
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <span class="spinner" id="spinner"></span>
+          <span id="btnText">Ingresar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Si ya hay sesión válida, ir al dashboard
+    if (localStorage.getItem('ndg_token')) {
+      window.location.replace('/dashboard.html');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const alert    = document.getElementById('alert');
+      const spinner  = document.getElementById('spinner');
+      const btnText  = document.getElementById('btnText');
+      const submitBtn = document.getElementById('submitBtn');
+
+      // Limpia errores previos
+      alert.classList.remove('show');
+      document.getElementById('err-username').textContent = '';
+      document.getElementById('err-password').textContent = '';
+      document.getElementById('username').classList.remove('input-error');
+      document.getElementById('password').classList.remove('input-error');
+
+      // Validación local
+      let hasError = false;
+      if (!username) {
+        document.getElementById('err-username').textContent = 'El usuario es requerido';
+        document.getElementById('username').classList.add('input-error');
+        hasError = true;
+      }
+      if (!password) {
+        document.getElementById('err-password').textContent = 'La contraseña es requerida';
+        document.getElementById('password').classList.add('input-error');
+        hasError = true;
+      }
+      if (hasError) return;
+
+      // Estado loading
+      spinner.classList.add('show');
+      btnText.textContent = 'Ingresando…';
+      submitBtn.disabled = true;
+
+      const ok = await login(username, password);
+
+      if (!ok) {
+        spinner.classList.remove('show');
+        btnText.textContent = 'Ingresar';
+        submitBtn.disabled = false;
+        alert.textContent = 'Usuario o contraseña incorrectos';
+        alert.classList.add('show');
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+      }
+    });
+  </script>
+</body>
+</html>

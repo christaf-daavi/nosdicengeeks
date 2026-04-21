@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor — NosDicenGeeks Admin</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+  <style>
+    /* ── Editor layout ─────────────────────── */
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+      align-items: start;
+    }
+    .editor-main  { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .editor-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: calc(var(--header-h) + 16px); }
+
+    .aside-section { padding: 16px; }
+    .aside-section + .aside-section { border-top: 1px solid var(--border); }
+    .aside-title {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Title input ───────────────────────── */
+    #postTitle {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      border-radius: 0;
+      padding: 8px 0;
+      color: var(--text-heading);
+      width: 100%;
+    }
+    #postTitle:focus { border-color: var(--brand-blue); box-shadow: none; }
+    #postTitle::placeholder { color: var(--text-muted); font-weight: 400; }
+
+    /* ── EasyMDE dark overrides ─────────────── */
+    .EasyMDEContainer { border-radius: var(--radius-lg); overflow: hidden; }
+    .EasyMDEContainer .CodeMirror {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-top: none;
+      font-size: .92rem;
+      min-height: 480px;
+      padding: 12px 16px;
+    }
+    .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--brand-blue); }
+    .EasyMDEContainer .CodeMirror-scroll { min-height: 480px; }
+    .editor-toolbar {
+      background: var(--bg-card) !important;
+      border: 1px solid var(--border) !important;
+      border-bottom: 1px solid var(--border) !important;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+      padding: 4px 8px !important;
+    }
+    .editor-toolbar button {
+      color: var(--text-muted) !important;
+      border-radius: 4px !important;
+    }
+    .editor-toolbar button:hover,
+    .editor-toolbar button.active { background: var(--bg-hover) !important; color: var(--text) !important; }
+    .editor-toolbar i.separator { border-color: var(--border) !important; }
+    .editor-preview, .editor-preview-side {
+      background: var(--bg-card) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .editor-statusbar { background: var(--bg-card) !important; color: var(--text-muted) !important; border-color: var(--border) !important; }
+    .cm-s-easymde .cm-header   { color: var(--brand-blue) !important; }
+    .cm-s-easymde .cm-link     { color: var(--brand-blue) !important; }
+    .cm-s-easymde .cm-url      { color: var(--text-muted) !important; }
+    .cm-s-easymde .cm-strong   { color: var(--text-heading) !important; }
+    .cm-s-easymde .cm-em       { color: var(--brand-yellow) !important; }
+    .cm-s-easymde .cm-quote    { color: var(--text-muted) !important; font-style: italic; }
+    .cm-s-easymde .cm-comment  { color: #64748b !important; }
+
+    /* ── Publish actions ───────────────────── */
+    .publish-actions { display: flex; flex-direction: column; gap: 8px; }
+    .publish-actions .btn { justify-content: center; }
+
+    /* ── Image drop zone ───────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      font-size: .8rem;
+      color: var(--text-muted);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--brand-blue);
+      background: rgba(4,150,255,.05);
+      color: var(--text);
+    }
+    .drop-zone svg { display: block; margin: 0 auto 8px; opacity: .5; }
+    #coverPreview {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: none;
+      margin-top: 10px;
+    }
+    #removeCoverBtn { margin-top: 8px; width: 100%; justify-content: center; display: none; }
+
+    /* ── Tags chips ────────────────────────── */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      min-height: 40px;
+      cursor: text;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .tags-container:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(4,150,255,.15);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(4,150,255,.15);
+      color: var(--brand-blue);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: .78rem;
+      font-weight: 500;
+    }
+    .chip-remove {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      opacity: .7;
+      font-size: 14px;
+    }
+    .chip-remove:hover { opacity: 1; }
+    .tag-input {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: .85rem;
+      outline: none;
+      min-width: 80px;
+      flex: 1;
+      padding: 2px 0;
+    }
+    .tag-input::placeholder { color: var(--text-muted); }
+
+    /* ── SEO semaphore ─────────────────────── */
+    .seo-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-size: .8rem;
+      color: var(--text-muted);
+    }
+    .seo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border);
+      transition: background var(--transition);
+    }
+    .seo-dot.seo-green { background: #10b981; }
+    .seo-dot.seo-red   { background: var(--brand-pink); }
+    .seo-score-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .seo-score-label { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+    .seo-score-value { font-size: 1.05rem; font-weight: 700; }
+    .score-good { color: #10b981; }
+    .score-ok   { color: var(--brand-yellow); }
+    .score-bad  { color: var(--brand-pink); }
+    .seo-bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 999px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .seo-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .4s ease;
+      background: var(--border);
+    }
+    .seo-bar-fill.score-good { background: #10b981; }
+    .seo-bar-fill.score-ok   { background: var(--brand-yellow); }
+    .seo-bar-fill.score-bad  { background: var(--brand-pink); }
+
+    /* ── Save status ────────────────────────── */
+    .save-status {
+      font-size: .75rem;
+      color: var(--text-muted);
+      text-align: center;
+      min-height: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .editor-layout { grid-template-columns: 1fr; }
+      .editor-aside  { position: static; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ─────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-icon">G</div>
+      <div class="sidebar__brand-name">NosDicenGeeks<span>Admin Panel</span></div>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="/dashboard.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Posts
+      </a>
+      <a href="/media.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Media
+      </a>
+      <a href="/settings.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configuración
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="nav-item" onclick="logout()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────── -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-toggle" id="menuToggle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <a href="/dashboard.html" class="btn btn-ghost btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Posts
+        </a>
+        <span style="color:var(--text-muted);">/</span>
+        <span class="topbar__title" id="editorPageTitle">Nuevo post</span>
+      </div>
+      <div id="topAlert" class="alert" style="margin:0;padding:6px 12px;font-size:.8rem;"></div>
+    </div>
+
+    <div class="content">
+      <div class="editor-layout">
+
+        <!-- ── Columna principal ───────────────── -->
+        <div class="editor-main">
+          <input type="text" id="postTitle"
+                 placeholder="Título del post…" autocomplete="off" />
+          <div>
+            <textarea id="postContent"></textarea>
+          </div>
+        </div>
+
+        <!-- ── Columna lateral ────────────────── -->
+        <div class="editor-aside">
+          <div class="card" style="padding:0;">
+
+            <!-- Publicación -->
+            <div class="aside-section">
+              <div class="aside-title">Publicación</div>
+              <div class="publish-actions">
+                <button class="btn btn-warning" id="draftBtn" onclick="savePost(true)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Guardar borrador
+                </button>
+                <button class="btn btn-primary" id="publishBtn" onclick="savePost(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Publicar
+                </button>
+              </div>
+              <div class="save-status" id="saveStatus"></div>
+            </div>
+
+            <!-- Imagen de portada -->
+            <div class="aside-section">
+              <div class="aside-title">Imagen de portada</div>
+              <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp,image/gif"
+                     style="display:none;" />
+              <div class="drop-zone" id="dropZone" onclick="document.getElementById('coverInput').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Haz clic o arrastra una imagen
+                <div style="font-size:.72rem;margin-top:4px;opacity:.6;">JPG, PNG, WebP, GIF · máx 10MB</div>
+              </div>
+              <img id="coverPreview" alt="Vista previa de portada" />
+              <div id="coverUploadStatus" class="save-status" style="margin-top:6px;"></div>
+              <button class="btn btn-ghost btn-sm" id="removeCoverBtn" onclick="removeCover()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Eliminar imagen
+              </button>
+            </div>
+
+            <!-- Metadatos -->
+            <div class="aside-section">
+              <div class="aside-title">Metadatos</div>
+              <div class="form-group">
+                <label for="postDescription">Descripción</label>
+                <textarea id="postDescription" rows="3"
+                          placeholder="Descripción breve del post (120-160 chars)…"></textarea>
+                <span class="field-error" id="descCharCount"
+                      style="color:var(--text-muted);"></span>
+              </div>
+              <div class="form-group">
+                <label for="postAuthor">Autor</label>
+                <input type="text" id="postAuthor" placeholder="NosDicenGeeks" />
+              </div>
+              <div class="form-group">
+                <label for="postDate">Fecha de publicación</label>
+                <input type="date" id="postDate" />
+              </div>
+              <div class="form-group">
+                <label>Tags <span style="font-weight:400;color:var(--text-muted);">(Enter para agregar)</span></label>
+                <div class="tags-container" id="tagsContainer"
+                     onclick="document.getElementById('tagInput').focus()">
+                  <input type="text" id="tagInput" class="tag-input"
+                         placeholder="Escribe un tag…" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+
+            <!-- SEO -->
+            <div class="aside-section">
+              <div class="aside-title">SEO</div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label for="seoKeyword">Keyword principal</label>
+                <input type="text" id="seoKeyword" placeholder="ej: cyberpunk 2077" />
+              </div>
+              <div id="seo-title-len"     class="seo-item"><span class="seo-dot"></span><span class="seo-label">Longitud del título</span></div>
+              <div id="seo-desc-len"      class="seo-item"><span class="seo-dot"></span><span class="seo-label">Longitud de la descripción</span></div>
+              <div id="seo-kw-title"      class="seo-item"><span class="seo-dot"></span><span class="seo-label">Keyword en título</span></div>
+              <div id="seo-kw-desc"       class="seo-item"><span class="seo-dot"></span><span class="seo-label">Keyword en descripción</span></div>
+              <div id="seo-kw-content"    class="seo-item"><span class="seo-dot"></span><span class="seo-label">Keyword en contenido</span></div>
+              <div id="seo-words"         class="seo-item"><span class="seo-dot"></span><span class="seo-label">Cantidad de palabras</span></div>
+              <div class="seo-score-row">
+                <span class="seo-score-label">Score SEO</span>
+                <span class="seo-score-value" id="seo-score">—</span>
+              </div>
+              <div class="seo-bar"><div class="seo-bar-fill" id="seo-score-bar" style="width:0%"></div></div>
+            </div>
+
+          </div><!-- /card -->
+        </div><!-- /aside -->
+      </div><!-- /editor-layout -->
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/seo.js"></script>
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+<script src="/js/editor.js"></script>
+</body>
+</html>

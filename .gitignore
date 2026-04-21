@@ -22,3 +22,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# admin CMS
+admin/node_modules/
+admin/.env
