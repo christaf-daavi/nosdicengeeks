@@ -2,8 +2,15 @@
   {
     "id": 1,
     "username": "admin",
-    "password": "$2b$10$WCOjL3bwfCMADTuVowcn8e2QUWr8jsxAKIkxVgFId20V35pxDrRA.",
+    "password": "$2b$10$OSulOgbZrfvR0aW0tbDwxe4EveAtNV3vaZ1TH8W0VQGM5qkI5VZfS",
     "role": "admin",
     "createdAt": "2026-04-20T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "username": "editor",
+    "password": "$2b$10$tNB9/sey0EnIMXjd/fonXeTHSFXBxsbSEm91Wxe5ZAeY2kHJP2NPK",
+    "role": "editor",
+    "createdAt": "2026-07-04T03:20:01.470Z"
   }
 ]

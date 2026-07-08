@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
+const { marked } = require('marked');
 
 const BLOG_DIR = path.join(process.env.BLOG_PATH || '/var/www/nosdicengeeks-dev', 'src/content/blog');
 
@@ -33,13 +34,14 @@ function getAllPosts() {
     const { data } = matter(raw);
     return {
       filename,
+      id: data.id || '',
       title: data.title || '',
       description: data.description || '',
       pubDate: data.pubDate || null,
       tags: data.tags || [],
       author: data.author || '',
       draft: data.draft ?? false,
-      slug: filename.replace(/\.md$/, ''),
+      slug: data.slug || filename.replace(/\.md$/, ''),
     };
   });
 }
@@ -48,11 +50,14 @@ function getPost(filename) {
   const filepath = resolvePath(filename);
   const raw = fs.readFileSync(filepath, 'utf8');
   const { data: frontmatter, content } = matter(raw);
-  return { frontmatter, content };
+  return { frontmatter, content: marked.parse(content) };
 }
 
 function createPost(data) {
-  const { title, description = '', content = '', tags = [], author = '', draft = false, pubDate } = data;
+  const {
+    title, description = '', content = '', tags = [], author = '', draft = false, pubDate,
+    ogTitle, ogDescription, ogImage, twitterCard, slug,
+  } = data;
 
   if (!title) throw new Error('El título es requerido');
 
@@ -64,12 +69,18 @@ function createPost(data) {
   }
 
   const frontmatter = {
+    id: data.id || ('ndg-' + Math.floor(Date.now() / 1000)),
     title,
     description,
     pubDate: pubDate || new Date().toISOString().split('T')[0],
     tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
     author,
     draft,
+    slug: slugify(slug || title),
+    og_title: ogTitle || '',
+    og_description: ogDescription || '',
+    og_image: ogImage || '',
+    twitter_card: twitterCard || 'summary_large_image',
   };
 
   const fileContent = matter.stringify(content, frontmatter);
@@ -83,9 +94,20 @@ function updatePost(filename, data) {
   const raw = fs.readFileSync(filepath, 'utf8');
   const { data: existingFrontmatter, content: existingContent } = matter(raw);
 
-  const { content = existingContent, ...frontmatterUpdates } = data;
+  const { content = existingContent, ogTitle, ogDescription, ogImage, twitterCard, slug, ...frontmatterUpdates } = data;
 
   const newFrontmatter = { ...existingFrontmatter, ...frontmatterUpdates };
+
+  // Asignación explícita de draft: no depender únicamente del spread de
+  // frontmatterUpdates, para que un refactor futuro de la desestructuración
+  // no pueda perder este campo en silencio.
+  if (data.draft !== undefined) newFrontmatter.draft = !!data.draft;
+
+  if (ogTitle !== undefined) newFrontmatter.og_title = ogTitle || '';
+  if (ogDescription !== undefined) newFrontmatter.og_description = ogDescription || '';
+  if (ogImage !== undefined) newFrontmatter.og_image = ogImage || '';
+  if (twitterCard !== undefined) newFrontmatter.twitter_card = twitterCard || 'summary_large_image';
+  if (slug !== undefined && slug !== '') newFrontmatter.slug = slugify(slug);
 
   // Normaliza tags si viene como string
   if (newFrontmatter.tags && !Array.isArray(newFrontmatter.tags)) {
@@ -112,4 +134,19 @@ function unpublishPost(filename) {
   fs.writeFileSync(filepath, fileContent, 'utf8');
 }
 
-module.exports = { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost };
+function bulkDeletePosts(filenames) {
+  const errors = [];
+  let deleted = 0;
+  for (const filename of filenames) {
+    try {
+      const filepath = resolvePath(filename);
+      fs.unlinkSync(filepath);
+      deleted++;
+    } catch (err) {
+      errors.push({ filename, error: err.message });
+    }
+  }
+  return { deleted, errors };
+}
+
+module.exports = { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost, bulkDeletePosts };

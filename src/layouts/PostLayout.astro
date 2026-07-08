@@ -3,6 +3,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TagBadge from '../components/TagBadge.astro';
+import siteConfig from '../data/site-config.json';
 
 interface Props {
   title: string;
@@ -27,14 +28,36 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
   month: 'long',
   day: 'numeric',
 });
+
+const gtmId = siteConfig.gtmId || '';
 ---
 
 <!doctype html>
 <html lang="es" data-theme="dark">
   <head>
     <BaseHead title={title} description={description} image={image?.src} />
+    {gtmId && (
+      <Fragment>
+        <!-- Google Tag Manager -->
+        <script set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');`} />
+        <!-- End Google Tag Manager -->
+      </Fragment>
+    )}
   </head>
   <body>
+    {gtmId && (
+      <Fragment>
+        <!-- Google Tag Manager (noscript) -->
+        <noscript>
+          <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`} height="0" width="0" style="display:none;visibility:hidden"></iframe>
+        </noscript>
+        <!-- End Google Tag Manager (noscript) -->
+      </Fragment>
+    )}
     <Header />
 
     <main id="main-content">

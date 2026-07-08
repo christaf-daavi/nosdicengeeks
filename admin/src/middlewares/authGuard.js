@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+const authGuard = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.slice(7)
@@ -17,3 +17,12 @@ module.exports = (req, res, next) => {
     return res.status(403).json({ error: 'Token inválido o expirado' });
   }
 };
+
+const requireRole = (role) => (req, res, next) => {
+  if (!req.user || req.user.role !== role) {
+    return res.status(403).json({ error: `Acceso denegado. Se requiere rol: ${role}` });
+  }
+  next();
+};
+
+module.exports = { authGuard, requireRole };

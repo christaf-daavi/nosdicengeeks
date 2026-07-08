@@ -1,7 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TagBadge from '../../components/TagBadge.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
+
+const page = await getEntry('pages', 'tags');
+if (!page) throw new Error('Página "tags" no encontrada en src/content/pages/tags.md');
 
 const posts = await getCollection('blog', ({ data }) => !data.draft);
 
@@ -30,8 +33,9 @@ function tagSize(count: number): string {
 ---
 
 <BaseLayout
-  title="Tags — NosDicenGeeks"
-  description="Todos los temas del blog: tecnología, videojuegos, programación y cultura geek."
+  title={page.data.title}
+  description={page.data.description}
+  image={page.data.og_image || undefined}
 >
   <section class="section">
     <div class="container">

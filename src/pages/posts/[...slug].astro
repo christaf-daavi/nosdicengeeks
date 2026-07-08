@@ -4,8 +4,10 @@ import PostLayout from '../../layouts/PostLayout.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
+  // Usa el slug del frontmatter si viene definido; si no, cae al slug
+  // derivado del nombre de archivo (compatibilidad hacia atrás).
   return posts.map(post => ({
-    params: { slug: post.id },
+    params: { slug: post.data.slug || post.id },
     props: { post },
   }));
 }

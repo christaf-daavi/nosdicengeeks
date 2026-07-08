@@ -63,3 +63,25 @@ async function apiFetch(path, options = {}) {
   }
   return res;
 }
+
+// ── Logo de marca en el sidebar ──────────────────────────────────
+async function loadLogo() {
+  const icon = document.querySelector('.sidebar__brand-icon');
+  if (!icon) return;
+  const token = getToken();
+  if (!token) return;
+  try {
+    const res = await fetch('/api/settings/logo', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.exists) {
+      icon.innerHTML = `<img src="${data.url}?t=${Date.now()}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;" />`;
+    }
+  } catch {
+    // Si falla, se conserva el icono por defecto
+  }
+}
+
+loadLogo();

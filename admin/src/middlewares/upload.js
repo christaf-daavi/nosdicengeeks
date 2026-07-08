@@ -1,6 +1,9 @@
 const multer = require('multer');
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
+  'image/x-icon', 'image/vnd.microsoft.icon',
+];
 
 const upload = multer({
   storage: multer.memoryStorage(),

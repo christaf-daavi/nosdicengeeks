@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Media — NosDicenGeeks Admin</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+  <style>
+    .dropzone { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color var(--transition), background var(--transition); background: var(--bg-card); margin-bottom: 28px; }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--brand-blue); background: rgba(4,150,255,.05); }
+    .dropzone__icon { font-size: 2.5rem; margin-bottom: 12px; opacity: .5; }
+    .dropzone__title { font-size: 1rem; font-weight: 600; color: var(--text-heading); margin-bottom: 6px; }
+    .dropzone__sub { font-size: .82rem; color: var(--text-muted); }
+    .dropzone__sub span { color: var(--brand-blue); cursor: pointer; }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+    .media-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: relative; transition: border-color var(--transition), box-shadow var(--transition); }
+    .media-item:hover { border-color: var(--brand-blue); }
+    .media-item:hover .media-item__actions { opacity: 1; }
+    .media-item.selected { border-color: var(--brand-blue); box-shadow: 0 0 0 1px var(--brand-blue); }
+    .media-item__thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: var(--bg-input); }
+    .media-item__info { padding: 8px 10px; }
+    .media-item__name { font-size: .75rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .media-item__size { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
+    .media-item__actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--transition); z-index: 2; }
+    .media-item__btn { width: 28px; height: 28px; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: .75rem; }
+    .media-item__btn--copy { background: rgba(4,150,255,.85); color: #fff; }
+    .media-item__btn--del { background: rgba(216,17,89,.85); color: #fff; }
+    .media-item__btn:hover { filter: brightness(1.15); }
+    .media-checkbox { position: absolute; top: 8px; left: 8px; z-index: 2; width: 17px; height: 17px; cursor: pointer; }
+    .in-use-badge { position: absolute; bottom: 44px; left: 6px; z-index: 2; background: rgba(4,150,255,.85); color: #fff; font-size: .65rem; font-weight: 600; padding: 3px 8px; border-radius: 99px; cursor: default; }
+    .in-use-badge:hover .in-use-tooltip { display: block; }
+    .in-use-tooltip { display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 6px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; min-width: 200px; max-width: 260px; box-shadow: var(--shadow); z-index: 10; }
+    .in-use-tooltip__item { display: block; font-size: .72rem; color: var(--text); padding: 3px 0; text-decoration: none; white-space: normal; }
+    .in-use-tooltip__item:hover { color: var(--brand-blue); }
+    .upload-progress { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; display: none; }
+    .upload-progress.show { display: block; }
+    .progress-bar-wrap { background: var(--bg-input); border-radius: 99px; height: 6px; margin-top: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--brand-blue); border-radius: 99px; transition: width .3s ease; width: 0%; }
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .toolbar__select-all { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text-muted); cursor: pointer; }
+    .toolbar__count { font-size: .82rem; color: var(--text-muted); margin-left: auto; }
+    #fileInput { display: none; }
+    .copied-toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; font-size: .85rem; color: var(--text); box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; z-index: 999; }
+    .copied-toast.show { opacity: 1; transform: translateY(0); }
+    .main { min-width: 0; width: calc(100vw - 240px); }
+    .content { min-width: 0; width: 100%; }
+    .dropzone { width: 100%; box-sizing: border-box; }
+    .media-grid { width: 100%; box-sizing: border-box; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-icon">G</div>
+      <div class="sidebar__brand-name">NosDicenGeeks<span>Admin Panel</span></div>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="/dashboard.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Posts
+      </a>
+      <a href="/pages.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        Páginas
+      </a>
+      <a href="/media.html" class="nav-item active">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Media
+      </a>
+      <a href="/settings.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configuración
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="nav-item" onclick="logout()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-toggle" id="menuToggle" aria-label="Menú">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="topbar__title">Media</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn-danger btn-sm" id="bulkDeleteMediaBtn" onclick="openBulkDeleteMediaModal()" disabled style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Eliminar seleccionadas
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileInput').click()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Subir imagen
+        </button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="alertBox" class="alert" style="margin-bottom:16px;"></div>
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone__icon">🖼️</div>
+        <div class="dropzone__title">Arrastra imágenes aquí</div>
+        <div class="dropzone__sub">o <span onclick="document.getElementById('fileInput').click()">selecciona archivos</span> · JPG, PNG, WebP hasta 10MB</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple />
+      <div id="progressWrap"></div>
+      <div class="toolbar">
+        <label class="toolbar__select-all">
+          <input type="checkbox" id="selectAllMedia" /> Seleccionar todas
+        </label>
+        <span style="font-size:.85rem;font-weight:600;color:var(--text-heading);">Imágenes subidas</span>
+        <span class="toolbar__count" id="mediaCount">Cargando…</span>
+      </div>
+      <div class="media-grid" id="mediaGrid">
+        <div style="grid-column:1/-1;"><div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p>Cargando imágenes…</p>
+        </div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="copied-toast" id="copiedToast">✓ Ruta copiada al portapapeles</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal__title">¿Eliminar imagen?</div>
+    <div class="modal__body">Se eliminará <strong id="deleteModalName"></strong> permanentemente.</div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkDeleteMediaModal">
+  <div class="modal">
+    <div class="modal__title">¿Eliminar imágenes seleccionadas?</div>
+    <div class="modal__body">
+      Se eliminarán permanentemente <strong id="bulkDeleteMediaCount"></strong> imágenes. Esta acción no se puede deshacer.
+      <div id="bulkDeleteMediaUsedWarning" style="display:none;margin-top:10px;padding:10px;border-radius:var(--radius);background:rgba(216,17,89,.1);border:1px solid rgba(216,17,89,.3);font-size:.78rem;color:var(--text);"></div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" onclick="closeBulkDeleteMediaModal()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmBulkDeleteMediaBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script>
+const token = () => localStorage.getItem('ndg_token');
+const SITE_URL = 'https://dev.nosdicengeeks.com';
+const selectedMedia = new Set();
+let pendingDelete = null;
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getRole() {
+  try { return JSON.parse(atob(token().split('.')[1])).role || null; } catch { return null; }
+}
+
+function showAlert(msg, type='error') {
+  const el = document.getElementById('alertBox');
+  el.textContent = msg; el.className = `alert alert-${type} show`;
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+function showToast() {
+  const t = document.getElementById('copiedToast');
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function updateBulkDeleteMediaButton() {
+  const btn = document.getElementById('bulkDeleteMediaBtn');
+  if (getRole() !== 'admin') { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  btn.disabled = selectedMedia.size === 0;
+}
+
+async function loadMedia() {
+  selectedMedia.clear();
+  document.getElementById('selectAllMedia').checked = false;
+  try {
+    const res = await fetch('/api/media', { headers: { Authorization: `Bearer ${token()}` } });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    renderGrid(data.files || []);
+  } catch { document.getElementById('mediaGrid').innerHTML = '<div style="grid-column:1/-1;"><div class="empty-state"><p>No se pudieron cargar las imágenes.</p></div></div>'; }
+  updateBulkDeleteMediaButton();
+}
+
+function renderGrid(files) {
+  const grid = document.getElementById('mediaGrid');
+  document.getElementById('mediaCount').textContent = `${files.length} archivo${files.length !== 1 ? 's' : ''}`;
+  if (!files.length) { grid.innerHTML = '<div style="grid-column:1/-1;"><div class="empty-state"><p>No hay imágenes todavía.</p></div></div>'; return; }
+  grid.innerHTML = files.map(f => {
+    const used = Array.isArray(f.usedIn) && f.usedIn.length > 0;
+    const tooltip = used ? f.usedIn.map(p =>
+      `<a class="in-use-tooltip__item" href="${SITE_URL}/posts/${encodeURIComponent(p.slug)}" target="_blank">#${escHtml(p.id)} — ${escHtml(p.title)}</a>`
+    ).join('') : '';
+    return `<div class="media-item" data-name="${escHtml(f.name)}">
+      <input type="checkbox" class="media-checkbox" data-name="${escHtml(f.name)}" />
+      <img class="media-item__thumb" src="${f.url}" alt="${escHtml(f.name)}" loading="lazy">
+      <div class="media-item__actions">
+        <button class="media-item__btn media-item__btn--copy" title="Copiar ruta" onclick="copyPath('${f.url}')">📋</button>
+        <button class="media-item__btn media-item__btn--del" title="Eliminar" onclick="openDeleteModal('${escHtml(f.name)}')">🗑</button>
+      </div>
+      ${used ? `<div class="in-use-badge">En uso<div class="in-use-tooltip">${tooltip}</div></div>` : ''}
+      <div class="media-item__info">
+        <div class="media-item__name">${escHtml(f.name)}</div>
+        <div class="media-item__size">${f.size||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('mediaGrid').addEventListener('change', (e) => {
+  if (!e.target.classList.contains('media-checkbox')) return;
+  const name = e.target.dataset.name;
+  const item = e.target.closest('.media-item');
+  if (e.target.checked) { selectedMedia.add(name); item.classList.add('selected'); }
+  else { selectedMedia.delete(name); item.classList.remove('selected'); }
+  const total = document.querySelectorAll('.media-checkbox').length;
+  document.getElementById('selectAllMedia').checked = total > 0 && selectedMedia.size === total;
+  updateBulkDeleteMediaButton();
+});
+
+document.getElementById('selectAllMedia').addEventListener('change', (e) => {
+  const checked = e.target.checked;
+  document.querySelectorAll('.media-checkbox').forEach((cb) => {
+    cb.checked = checked;
+    const item = cb.closest('.media-item');
+    if (checked) { selectedMedia.add(cb.dataset.name); item.classList.add('selected'); }
+    else { selectedMedia.delete(cb.dataset.name); item.classList.remove('selected'); }
+  });
+  updateBulkDeleteMediaButton();
+});
+
+function copyPath(url) { navigator.clipboard.writeText(url).then(showToast); }
+
+function openDeleteModal(name) { pendingDelete = name; document.getElementById('deleteModalName').textContent = name; document.getElementById('deleteModal').classList.add('open'); }
+function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); pendingDelete = null; }
+document.getElementById('confirmDeleteBtn').onclick = async () => {
+  if (!pendingDelete) return;
+  try {
+    const res = await fetch(`/api/media/${encodeURIComponent(pendingDelete)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token()}` } });
+    if (!res.ok) throw new Error();
+    showAlert('Imagen eliminada.', 'success'); closeDeleteModal(); loadMedia();
+  } catch { showAlert('Error al eliminar la imagen.'); }
+};
+
+// ── Bulk delete ──────────────────────────────────────────────────
+function openBulkDeleteMediaModal() {
+  if (selectedMedia.size === 0) return;
+  document.getElementById('bulkDeleteMediaCount').textContent = selectedMedia.size;
+  document.getElementById('bulkDeleteMediaUsedWarning').style.display = 'none';
+  document.getElementById('bulkDeleteMediaModal').classList.add('open');
+}
+function closeBulkDeleteMediaModal() {
+  document.getElementById('bulkDeleteMediaModal').classList.remove('open');
+}
+document.getElementById('bulkDeleteMediaModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeBulkDeleteMediaModal();
+});
+
+document.getElementById('confirmBulkDeleteMediaBtn').addEventListener('click', async () => {
+  const filenames = Array.from(selectedMedia);
+  if (!filenames.length) return;
+  const btn = document.getElementById('confirmBulkDeleteMediaBtn');
+  btn.disabled = true;
+  btn.textContent = 'Eliminando…';
+  try {
+    const res = await fetch('/api/media/bulk', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({ filenames }),
+    });
+    const data = await res.json();
+    if (res.status === 400 && Array.isArray(data.usedImages)) {
+      const warn = document.getElementById('bulkDeleteMediaUsedWarning');
+      warn.innerHTML = 'No se eliminó ninguna imagen porque las siguientes están en uso:<br>' +
+        data.usedImages.map(u => `<strong>${escHtml(u.name)}</strong>: ${u.usedIn.map(p => escHtml(p.title)).join(', ')}`).join('<br>');
+      warn.style.display = 'block';
+      return;
+    }
+    if (!res.ok) {
+      showAlert(data.error || 'Error al eliminar imágenes.');
+      closeBulkDeleteMediaModal();
+      return;
+    }
+    showAlert(`${data.deleted} imagen(es) eliminada(s).`, 'success');
+    closeBulkDeleteMediaModal();
+    loadMedia();
+  } catch {
+    showAlert('Error de conexión al eliminar imágenes.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Eliminar';
+  }
+});
+
+// ── Upload ───────────────────────────────────────────────────────
+async function uploadFiles(files) {
+  const wrap = document.getElementById('progressWrap');
+  for (const file of files) {
+    const id = `prog_${Date.now()}`;
+    wrap.insertAdjacentHTML('beforeend', `<div class="upload-progress show" id="${id}"><div style="display:flex;justify-content:space-between;font-size:.82rem;"><span style="color:var(--text)">${file.name}</span><span style="color:var(--text-muted)" id="${id}_pct">0%</span></div><div class="progress-bar-wrap"><div class="progress-bar" id="${id}_bar"></div></div></div>`);
+    const fd = new FormData(); fd.append('image', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/media/upload');
+    xhr.setRequestHeader('Authorization', `Bearer ${token()}`);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) { const p = Math.round(e.loaded/e.total*100); document.getElementById(`${id}_bar`).style.width=p+'%'; document.getElementById(`${id}_pct`).textContent=p+'%'; } };
+    xhr.onload = () => { setTimeout(() => document.getElementById(id)?.remove(), 1200); loadMedia(); };
+    xhr.onerror = () => showAlert(`Error subiendo ${file.name}`);
+    xhr.send(fd);
+  }
+}
+document.getElementById('fileInput').onchange = e => uploadFiles([...e.target.files]);
+const dz = document.getElementById('dropzone');
+dz.ondragover = e => { e.preventDefault(); dz.classList.add('dragover'); };
+dz.ondragleave = () => dz.classList.remove('dragover');
+dz.ondrop = e => { e.preventDefault(); dz.classList.remove('dragover'); uploadFiles([...e.dataTransfer.files]); };
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+loadMedia();
+</script>
+</body>
+</html>

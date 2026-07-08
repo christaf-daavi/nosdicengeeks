@@ -1,14 +1,30 @@
+import { createEditor, wireToolbar } from '/js/tiptap-editor.js';
+
 // ── Auth ─────────────────────────────────────────────────────────
 const token = checkAuth();
 if (!token) throw new Error('No auth');
+
+const SITE_URL = 'https://dev.nosdicengeeks.com';
 
 // ── State ────────────────────────────────────────────────────────
 const params   = new URLSearchParams(window.location.search);
 const editFile = params.get('file') || null;
 let   coverUrl = null;
 let   tags     = [];
-let   mde      = null;
+let   editor   = null;
 let   seoDebounce = null;
+let   slugManuallyEdited = false;
+let   pendingContentImageInsert = null;
+
+// ── Exponer al scope global ANTES que nada pueda fallar ───────────
+// (los onclick= del HTML son globales; si esto se declarara al final
+// del archivo, un error en la inicialización de TipTap más abajo
+// dejaría estas funciones sin definir y rompería todos los botones)
+window.savePost = (...args) => savePost(...args);
+window.removeCover = (...args) => removeCover(...args);
+window.openOgImageModal = (...args) => openOgImageModal(...args);
+window.closeOgImageModal = (...args) => closeOgImageModal(...args);
+window.closeContentImageModal = (...args) => closeContentImageModal(...args);
 
 // ── Sidebar móvil ────────────────────────────────────────────────
 document.getElementById('menuToggle').addEventListener('click', () =>
@@ -21,27 +37,21 @@ document.addEventListener('click', (e) => {
     sidebar.classList.remove('open');
 });
 
-// ── EasyMDE init ──────────────────────────────────────────────────
-mde = new EasyMDE({
-  element: document.getElementById('postContent'),
-  spellChecker: false,
-  autofocus: false,
-  placeholder: 'Escribe el contenido del post en Markdown…',
-  status: ['lines', 'words', 'cursor'],
-  toolbar: [
-    'bold', 'italic', 'strikethrough', '|',
-    'heading-1', 'heading-2', 'heading-3', '|',
-    'quote', 'unordered-list', 'ordered-list', '|',
-    'link', 'image', 'table', 'horizontal-rule', '|',
-    'preview', 'side-by-side', 'fullscreen', '|',
-    'guide',
-  ],
-  renderingConfig: { singleLineBreaks: false },
-  previewClass: ['editor-preview'],
-  sideBySideFullscreen: false,
-});
-
-mde.codemirror.on('change', () => debounceSEO());
+// ── TipTap init ────────────────────────────────────────────────────
+// Envuelto en try/catch: si falla la carga de TipTap (CDN, red, etc.)
+// el resto del editor (slug, título, guardado, carga del post) debe
+// seguir funcionando en lugar de abortar todo el módulo.
+try {
+  editor = createEditor(document.getElementById('editorContentArea'), {
+    onUpdate: () => debounceSEO(),
+  });
+  wireToolbar(editor, document.getElementById('tiptapToolbar'), {
+    onImageRequest: (insertFn) => openContentImageModal(insertFn),
+  });
+} catch (err) {
+  console.error('Error al inicializar TipTap:', err);
+  showTopAlert('error', `No se pudo cargar el editor de texto enriquecido: ${err.message}`, false);
+}
 
 // ── Helpers UI ───────────────────────────────────────────────────
 function showTopAlert(type, msg, autohide = true) {
@@ -56,6 +66,43 @@ function setSaveStatus(msg, color = 'var(--text-muted)') {
   el.textContent = msg;
   el.style.color = color;
 }
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ── Slug ─────────────────────────────────────────────────────────
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function updateSlugPreview() {
+  const slug = document.getElementById('postSlug').value;
+  document.getElementById('slugPreview').textContent = `${SITE_URL.replace('https://', '')}/posts/${slug}`;
+}
+
+document.getElementById('postTitle').addEventListener('input', (e) => {
+  if (!editFile && !slugManuallyEdited) {
+    document.getElementById('postSlug').value = slugify(e.target.value);
+    updateSlugPreview();
+  }
+  debounceSEO();
+});
+
+document.getElementById('postSlug').addEventListener('input', () => {
+  slugManuallyEdited = true;
+  updateSlugPreview();
+});
 
 // ── Tags ──────────────────────────────────────────────────────────
 function renderTags() {
@@ -117,15 +164,14 @@ function runSEO() {
   updateSemaphore(
     document.getElementById('postTitle').value,
     document.getElementById('postDescription').value,
-    mde ? mde.value() : '',
+    editor ? editor.getText() : '',
     document.getElementById('seoKeyword').value
   );
 }
 
-document.getElementById('postTitle').addEventListener('input', debounceSEO);
 document.getElementById('seoKeyword').addEventListener('input', debounceSEO);
 
-// ── Image upload ─────────────────────────────────────────────────
+// ── Image upload (portada) ────────────────────────────────────────
 function setCoverPreview(url) {
   const img    = document.getElementById('coverPreview');
   const rmBtn  = document.getElementById('removeCoverBtn');
@@ -181,13 +227,11 @@ async function uploadImage(file) {
   }
 }
 
-// File input
 document.getElementById('coverInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) uploadImage(file);
 });
 
-// Drag & drop
 const dropZone = document.getElementById('dropZone');
 dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
@@ -196,6 +240,63 @@ dropZone.addEventListener('drop', (e) => {
   dropZone.classList.remove('drag-over');
   const file = e.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) uploadImage(file);
+});
+
+// ── Selector de imagen genérico (grid de /api/media) ──────────────
+async function loadMediaGrid(gridId, onPick) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;">Cargando imágenes…</p>';
+  try {
+    const res = await apiFetch('/api/media');
+    if (!res) return;
+    const data = await res.json();
+    const files = data.files || [];
+    if (!files.length) {
+      grid.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;">No hay imágenes disponibles. Sube una desde la sección Media.</p>';
+      return;
+    }
+    grid.innerHTML = files.map((f) => `
+      <div class="media-pick-item" data-url="${escHtml(f.url)}" style="cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;" title="${escHtml(f.name)}">
+        <img src="${f.url}" alt="${escHtml(f.name)}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
+      </div>`).join('');
+    grid.querySelectorAll('.media-pick-item').forEach((el) => {
+      el.addEventListener('click', () => onPick(el.dataset.url));
+    });
+  } catch (err) {
+    grid.innerHTML = `<p style="color:var(--brand-pink);font-size:.85rem;">Error: ${escHtml(err.message)}</p>`;
+  }
+}
+
+// og:image
+function openOgImageModal() {
+  document.getElementById('ogImageModal').classList.add('open');
+  loadMediaGrid('ogImageGrid', (url) => {
+    document.getElementById('ogImage').value = url;
+    closeOgImageModal();
+  });
+}
+function closeOgImageModal() {
+  document.getElementById('ogImageModal').classList.remove('open');
+}
+document.getElementById('ogImageModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeOgImageModal();
+});
+
+// Imagen dentro del contenido (TipTap)
+function openContentImageModal(insertFn) {
+  pendingContentImageInsert = insertFn;
+  document.getElementById('contentImageModal').classList.add('open');
+  loadMediaGrid('contentImageGrid', (url) => {
+    if (pendingContentImageInsert) pendingContentImageInsert(url);
+    closeContentImageModal();
+  });
+}
+function closeContentImageModal() {
+  document.getElementById('contentImageModal').classList.remove('open');
+  pendingContentImageInsert = null;
+}
+document.getElementById('contentImageModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeContentImageModal();
 });
 
 // ── Load post ────────────────────────────────────────────────────
@@ -214,12 +315,21 @@ async function loadPost(filename) {
       ? new Date(fm.pubDate).toISOString().split('T')[0]
       : '';
 
+    document.getElementById('postSlug').value = fm.slug || filename.replace(/\.md$/, '');
+    slugManuallyEdited = true; // no auto-regenerar el slug de un post existente
+    updateSlugPreview();
+
     tags = Array.isArray(fm.tags) ? [...fm.tags] : [];
     renderTags();
 
+    document.getElementById('ogTitle').value       = fm.og_title       || '';
+    document.getElementById('ogDescription').value = fm.og_description || '';
+    document.getElementById('ogImage').value       = fm.og_image       || '';
+    document.getElementById('twitterCard').value   = fm.twitter_card   || 'summary_large_image';
+
     if (fm.image && fm.image.src) setCoverPreview(fm.image.src);
 
-    mde.value(content || '');
+    if (editor) editor.commands.setContent(content || '');
     document.getElementById('editorPageTitle').textContent = fm.title || filename;
     document.title = `${fm.title || filename} — Editor`;
 
@@ -248,12 +358,17 @@ async function savePost(asDraft) {
 
   const body = {
     title,
+    slug:        document.getElementById('postSlug').value.trim(),
     description: document.getElementById('postDescription').value.trim(),
     author:      document.getElementById('postAuthor').value.trim(),
     pubDate:     document.getElementById('postDate').value || new Date().toISOString().split('T')[0],
     tags:        [...tags],
-    draft:       asDraft,
-    content:     mde.value(),
+    draft:       !!asDraft, // true = "Guardar borrador", false = "Publicar" (ver botones en editor.html)
+    content:     editor ? editor.getHTML() : '',
+    ogTitle:       document.getElementById('ogTitle').value.trim(),
+    ogDescription: document.getElementById('ogDescription').value.trim(),
+    ogImage:       document.getElementById('ogImage').value.trim(),
+    twitterCard:   document.getElementById('twitterCard').value,
   };
 
   if (coverUrl) body.image = { src: coverUrl, alt: title };
@@ -289,6 +404,13 @@ async function savePost(asDraft) {
       history.replaceState(null, '', `/editor.html?file=${encodeURIComponent(data.filename)}`);
       document.getElementById('editorPageTitle').textContent = title;
     }
+
+    // Al publicar (draft: false), dispara el build automáticamente.
+    // El guardado ya se completó en este punto: si el build falla no
+    // se revierte nada, solo se informa el error.
+    if (!asDraft) {
+      await runBuildAfterSave();
+    }
   } catch (err) {
     showTopAlert('error', `Error de red: ${err.message}`);
     setSaveStatus('Error', 'var(--brand-pink)');
@@ -298,11 +420,24 @@ async function savePost(asDraft) {
   }
 }
 
-// ── Utils ────────────────────────────────────────────────────────
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+async function runBuildAfterSave() {
+  setSaveStatus('Publicando blog…');
+  showTopAlert('info', 'Publicando blog…', false);
+  try {
+    const res = await apiFetch('/api/build', { method: 'POST' });
+    if (!res) return;
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setSaveStatus('Post publicado y blog actualizado ✓', '#10b981');
+      showTopAlert('success', 'Post publicado y blog actualizado ✓');
+    } else {
+      setSaveStatus('Post guardado, pero el build falló', 'var(--brand-pink)');
+      showTopAlert('error', data.error || 'El build falló.', false);
+    }
+  } catch (err) {
+    setSaveStatus('Post guardado, pero el build falló', 'var(--brand-pink)');
+    showTopAlert('error', `Post guardado, pero el build falló: ${err.message}`, false);
+  }
 }
 
 // ── Fecha por defecto ────────────────────────────────────────────
@@ -312,5 +447,6 @@ document.getElementById('postDate').value = new Date().toISOString().split('T')[
 if (editFile) {
   loadPost(editFile);
 } else {
+  updateSlugPreview();
   runSEO();
 }

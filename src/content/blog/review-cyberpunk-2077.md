@@ -1,14 +1,30 @@
 ---
-title: "Cyberpunk 2077 en 2026: cuando el hype murió y quedó el juego"
-description: "Años después del lanzamiento más caótico de la historia reciente de los videojuegos, Cyberpunk 2077 es hoy un RPG sólido y hermoso. Pero el camino para llegar aquí merece una autopsia."
-pubDate: 2026-03-20
-updatedDate: 2026-03-27
-tags: ["videojuegos", "review", "rpg", "cd-projekt-red", "cyberpunk"]
-author: "NosDicenGeeks"
+title: 'Cyberpunk 2077 en 2026: cuando el hype murió y quedó el juego'
+description: >-
+  Años después del lanzamiento más caótico de la historia reciente de los
+  videojuegos, Cyberpunk 2077 es hoy un RPG sólido y hermoso. Pero el camino
+  para llegar aquí merece una autopsia.
+pubDate: 2026-03-20T00:00:00.000Z
+updatedDate: 2026-03-27T00:00:00.000Z
+tags:
+  - videojuegos
+  - review
+  - rpg
+  - cd-projekt-red
+  - cyberpunk
+author: NosDicenGeeks
 image:
-  src: "/images/cyberpunk-2077-review.webp"
-  alt: "Imagen de portada de la review de Cyberpunk 2077 con degradado en tonos fucsia y magenta"
+  src: /images/cyberpunk-2077-review.webp
+  alt: >-
+    Imagen de portada de la review de Cyberpunk 2077 con degradado en tonos
+    fucsia y magenta
 draft: false
+id: ndg-1780250271
+og_title: ''
+og_description: ''
+og_image: ''
+twitter_card: summary_large_image
+slug: review-cyberpunk-2077
 ---
 
 ## TL;DR

@@ -1,10 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getEntry, render } from 'astro:content';
+
+const page = await getEntry('pages', 'about');
+if (!page) throw new Error('Página "about" no encontrada en src/content/pages/about.md');
+const { Content } = await render(page);
 ---
 
 <BaseLayout
-  title="About — NosDicenGeeks"
-  description="Quiénes somos, qué hacemos y por qué el mundo necesita otro blog de tecnología hecho por geeks de verdad."
+  title={page.data.title}
+  description={page.data.description}
+  image={page.data.og_image || undefined}
 >
   <section class="section">
     <div class="container about-container">
@@ -17,73 +23,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <span class="prompt-sep">:~$</span>
           <span class="prompt-cmd"> cat about.md</span>
         </div>
-        <h1 class="about-title">Sobre NosDicenGeeks</h1>
+        <h1 class="about-title">{page.data.title}</h1>
       </header>
 
       <div class="about-body prose">
-
-        <h2>¿Qué es este lugar?</h2>
-        <p>
-          NosDicenGeeks es un blog de tecnología y cultura geek escrito por personas
-          que viven, respiran y a veces maldice la tecnología. No somos una empresa,
-          no tenemos equipo de PR y nadie nos paga por decir que cierto producto es
-          "revolucionario".
-        </p>
-        <p>
-          Escribimos lo que nos interesa, cuando nos interesa, como nos interesa.
-        </p>
-
-        <h2>¿De qué hablamos?</h2>
-        <ul>
-          <li><strong>Tecnología</strong> — hardware, software, Linux, open source, web dev</li>
-          <li><strong>Videojuegos</strong> — reviews honestas, análisis de industria, retrocomputación</li>
-          <li><strong>Programación</strong> — tutoriales, arquitectura, herramientas del oficio</li>
-          <li><strong>Cultura geek</strong> — anime, ciencia ficción, comics, películas y series tech</li>
-          <li><strong>Opinión</strong> — lo que pensamos del estado del mundo digital, sin filtros</li>
-        </ul>
-
-        <h2>Stack técnico del blog</h2>
-        <p>
-          Somos transparentes con las herramientas que usamos. Este blog está construido con:
-        </p>
-
-        <pre><code># Stack de NosDicenGeeks
-framework:  Astro 6
-lenguaje:   TypeScript (strict mode)
-estilos:    CSS puro con custom properties
-fuentes:    Fira Code + Inter (Google Fonts)
-despliegue: Static hosting
-contenido:  Markdown + Content Collections</code></pre>
-
-        <p>
-          Elegimos Astro porque genera HTML estático, tiene cero JavaScript por defecto
-          y nos deja escribir componentes limpios. El resultado: un blog rápido, accesible
-          y que no le envía telemetría a nadie.
-        </p>
-
-        <h2>La filosofía</h2>
-        <blockquote>
-          Si no podemos explicarlo de forma que un humano lo entienda, probablemente
-          tampoco lo entendemos nosotros.
-        </blockquote>
-        <p>
-          Huimos del contenido vacío, los listicles sin sustancia y las reseñas pagadas.
-          Cada post tiene que pasar una prueba simple: <em>¿vale la pena que alguien
-          invierta su tiempo en leerlo?</em>
-        </p>
-
-        <h2>Contacto</h2>
-        <p>
-          Nos encontrás en Twitter/X como
-          <a href="https://twitter.com/nosdicengeeks" target="_blank" rel="noopener noreferrer">@nosdicengeeks</a>
-          y el código del blog está en
-          <a href="https://github.com/nosdicengeeks" target="_blank" rel="noopener noreferrer">GitHub</a>.
-        </p>
-        <p>
-          Si encontraste un error, tenés una sugerencia o simplemente querés hablar
-          de tecnología: los DMs están abiertos.
-        </p>
-
+        <Content />
       </div>
 
       <div class="about-footer">

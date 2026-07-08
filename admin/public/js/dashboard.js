@@ -2,6 +2,9 @@
 const token = checkAuth();
 if (!token) throw new Error('No auth');
 
+const SITE_URL = 'https://dev.nosdicengeeks.com';
+const selectedFiles = new Set();
+
 // ── Sidebar móvil ────────────────────────────────────────────────
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
@@ -37,32 +40,82 @@ function hideAlert(id) {
   document.getElementById(id).classList.remove('show');
 }
 
+function getRole() {
+  const t = getToken();
+  if (!t) return null;
+  try {
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    return payload.role || null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Selección múltiple ───────────────────────────────────────────
+function updateBulkDeleteButton() {
+  const btn = document.getElementById('bulkDeleteBtn');
+  if (getRole() !== 'admin') {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  btn.disabled = selectedFiles.size === 0;
+}
+
+document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+  const checked = e.target.checked;
+  document.querySelectorAll('#postsBody .row-checkbox').forEach((cb) => {
+    cb.checked = checked;
+    if (checked) selectedFiles.add(cb.dataset.file);
+    else selectedFiles.delete(cb.dataset.file);
+  });
+  updateBulkDeleteButton();
+});
+
+document.getElementById('postsBody').addEventListener('change', (e) => {
+  if (!e.target.classList.contains('row-checkbox')) return;
+  const file = e.target.dataset.file;
+  if (e.target.checked) selectedFiles.add(file);
+  else selectedFiles.delete(file);
+
+  const total = document.querySelectorAll('#postsBody .row-checkbox').length;
+  document.getElementById('selectAllCheckbox').checked = total > 0 && selectedFiles.size === total;
+  updateBulkDeleteButton();
+});
+
 // ── Cargar posts ─────────────────────────────────────────────────
 async function loadPosts() {
   const tbody = document.getElementById('postsBody');
+  selectedFiles.clear();
+  document.getElementById('selectAllCheckbox').checked = false;
   try {
     const res = await apiFetch('/api/posts');
     if (!res) return;
     const posts = await res.json();
 
     if (!posts.length) {
-      tbody.innerHTML = `<tr><td colspan="5">
+      tbody.innerHTML = `<tr><td colspan="7">
         <div class="empty-state">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p>No hay posts todavía. <a href="/editor.html">Crea el primero</a>.</p>
         </div>
       </td></tr>`;
+      updateBulkDeleteButton();
       return;
     }
 
     tbody.innerHTML = posts.map((p) => {
       const tags = (p.tags || []).slice(0, 3).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
       const moreTags = p.tags && p.tags.length > 3 ? `<span class="tag">+${p.tags.length - 3}</span>` : '';
+      const postUrl = `${SITE_URL}/posts/${encodeURIComponent(p.slug)}`;
+      const linkClass = p.draft ? 'draft-link' : '';
       return `
         <tr data-file="${escHtml(p.filename)}">
+          <td class="col-checkbox"><input type="checkbox" class="row-checkbox" data-file="${escHtml(p.filename)}" /></td>
           <td class="col-status">${badgeFor(p.draft)}</td>
+          <td class="col-id"><a href="${postUrl}" target="_blank" class="${linkClass}">${escHtml(p.id)}</a></td>
           <td>
-            <div class="post-title">${escHtml(p.title)}</div>
+            <div class="post-title"><a href="${postUrl}" target="_blank" class="${linkClass}" style="text-decoration:none;color:inherit;">${escHtml(p.title)}</a></div>
             ${p.description ? `<div class="post-desc">${escHtml(p.description.substring(0, 80))}${p.description.length > 80 ? '…' : ''}</div>` : ''}
           </td>
           <td class="col-date">${formatDate(p.pubDate)}</td>
@@ -87,8 +140,9 @@ async function loadPosts() {
           </td>
         </tr>`;
     }).join('');
+    updateBulkDeleteButton();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5">
+    tbody.innerHTML = `<tr><td colspan="7">
       <div class="empty-state"><p>Error al cargar posts: ${escHtml(err.message)}</p></div>
     </td></tr>`;
   }
@@ -158,6 +212,43 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async () =
   }
 });
 
+// ── Bulk delete modal ────────────────────────────────────────────
+function openBulkDeleteModal() {
+  if (selectedFiles.size === 0) return;
+  document.getElementById('bulkDeleteCount').textContent = selectedFiles.size;
+  document.getElementById('bulkDeleteModal').classList.add('open');
+}
+function closeBulkDeleteModal() {
+  document.getElementById('bulkDeleteModal').classList.remove('open');
+}
+document.getElementById('bulkDeleteModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeBulkDeleteModal();
+});
+
+document.getElementById('confirmBulkDeleteBtn').addEventListener('click', async () => {
+  const filenames = Array.from(selectedFiles);
+  if (!filenames.length) return;
+  const btn = document.getElementById('confirmBulkDeleteBtn');
+  btn.disabled = true;
+  btn.textContent = 'Eliminando…';
+  try {
+    const res = await apiFetch('/api/posts/bulk', {
+      method: 'DELETE',
+      body: JSON.stringify({ filenames }),
+    });
+    closeBulkDeleteModal();
+    if (res && res.ok) {
+      await loadPosts();
+    } else {
+      const d = res ? await res.json() : {};
+      showAlert('buildAlert', 'error', d.error || 'Error al eliminar posts');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Eliminar';
+  }
+});
+
 // ── Build ────────────────────────────────────────────────────────
 async function triggerBuild() {
   const btn     = document.getElementById('buildBtn');
@@ -196,4 +287,5 @@ async function triggerBuild() {
 }
 
 // ── Init ─────────────────────────────────────────────────────────
+updateBulkDeleteButton();
 loadPosts();
