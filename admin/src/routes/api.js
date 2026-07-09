@@ -32,7 +32,9 @@ router.delete('/users/:id', authGuard, requireRole('admin'), usersController.rem
 // Settings - Logo
 router.post('/settings/logo', authGuard, requireRole('admin'), upload.single('image'), settingsController.uploadLogo);
 router.delete('/settings/logo', authGuard, requireRole('admin'), settingsController.removeLogo);
-router.get('/settings/logo', authGuard, settingsController.getLogo);
+// Público: se usa en login.html antes de autenticar; no expone nada sensible
+// (el logo también es público vía /images/logo/ en el blog real).
+router.get('/settings/logo', settingsController.getLogo);
 // Settings - Favicon
 router.post('/settings/favicon', authGuard, requireRole('admin'), upload.single('favicon'), settingsController.uploadFavicon);
 router.delete('/settings/favicon', authGuard, requireRole('admin'), settingsController.removeFavicon);

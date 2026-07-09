@@ -93,6 +93,21 @@
         document.getElementById('password').focus();
       }
     });
+
+    // Logo de marca en el login (GET /api/settings/logo es público)
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/logo');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.exists) {
+          document.querySelector('.login-brand__icon').innerHTML =
+            `<img src="${data.url}" style="width:100%;height:100%;object-fit:contain;border-radius:14px;" />`;
+        }
+      } catch {
+        // Si falla, se conserva el ícono "G" por defecto
+      }
+    })();
   </script>
 </body>
 </html>
