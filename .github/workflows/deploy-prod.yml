@@ -33,7 +33,7 @@ jobs:
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && npm install --production=false\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && npm run build\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd admin && npm install --production=false\"",
-              "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && pm2 restart ndg-admin-prod\""
+              "sudo -u ubuntu bash -c \"pm2 stop ndg-admin-prod && pm2 delete ndg-admin-prod && source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && pm2 start /var/www/nosdicengeeks-prod/admin/server.js --name ndg-admin-prod --cwd /var/www/nosdicengeeks-prod/admin && pm2 save\""
             ]' \
             --comment "Deploy from GitHub Actions - ${{ github.sha }}" \
             --query "Command.CommandId" \
