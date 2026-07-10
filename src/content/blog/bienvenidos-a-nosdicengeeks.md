@@ -11,7 +11,7 @@ tags:
   - geek
 author: NosDicenGeeks
 image:
-  src: /images/bienvenidos-cover.webp
+  src: /images/1783640277075-bienvenidos-cover.webp
   alt: >-
     Bienvenidos a NosDicenGeeks: el blog donde la tecnología habla nuestro
     idioma
