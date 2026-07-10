@@ -253,6 +253,12 @@
       .editor-layout { grid-template-columns: 1fr; }
       .editor-aside  { position: static; }
     }
+
+    /* ── Hero color swatches ────────────────── */
+    .color-swatches { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; transition: border-color .15s; }
+    .swatch:hover { border-color: rgba(255,255,255,0.5); }
+    .swatch.selected { border-color: #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body>
@@ -399,6 +405,50 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 Eliminar imagen
               </button>
+            </div>
+
+            <!-- Hero Text -->
+            <div class="aside-section">
+              <div class="aside-title">Hero Text</div>
+              <div class="form-group">
+                <label>Label (texto pequeño)</label>
+                <input type="text" id="heroLabel" placeholder="NosDicenGeeks" />
+                <div class="color-swatches" data-target="heroLabelColor">
+                  <button type="button" class="swatch" data-color="#0496ff" style="background:#0496ff" title="Azul"></button>
+                  <button type="button" class="swatch" data-color="#d81159" style="background:#d81159" title="Rosa"></button>
+                  <button type="button" class="swatch" data-color="#fbbc42" style="background:#fbbc42" title="Amarillo"></button>
+                  <button type="button" class="swatch" data-color="#8f2d56" style="background:#8f2d56" title="Púrpura"></button>
+                  <button type="button" class="swatch" data-color="#006ba6" style="background:#006ba6" title="Azul marino"></button>
+                  <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="Blanco"></button>
+                </div>
+                <input type="hidden" id="heroLabelColor" value="#fbbc42" />
+              </div>
+              <div class="form-group">
+                <label>Título hero</label>
+                <input type="text" id="heroTitle" placeholder="Título del post" />
+                <div class="color-swatches" data-target="heroTitleColor">
+                  <button type="button" class="swatch" data-color="#0496ff" style="background:#0496ff" title="Azul"></button>
+                  <button type="button" class="swatch" data-color="#d81159" style="background:#d81159" title="Rosa"></button>
+                  <button type="button" class="swatch" data-color="#fbbc42" style="background:#fbbc42" title="Amarillo"></button>
+                  <button type="button" class="swatch" data-color="#8f2d56" style="background:#8f2d56" title="Púrpura"></button>
+                  <button type="button" class="swatch" data-color="#006ba6" style="background:#006ba6" title="Azul marino"></button>
+                  <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="Blanco"></button>
+                </div>
+                <input type="hidden" id="heroTitleColor" value="#ffffff" />
+              </div>
+              <div class="form-group">
+                <label>Copy hero</label>
+                <input type="text" id="heroCopy" placeholder="Subtítulo o descripción breve" />
+                <div class="color-swatches" data-target="heroCopyColor">
+                  <button type="button" class="swatch" data-color="#0496ff" style="background:#0496ff" title="Azul"></button>
+                  <button type="button" class="swatch" data-color="#d81159" style="background:#d81159" title="Rosa"></button>
+                  <button type="button" class="swatch" data-color="#fbbc42" style="background:#fbbc42" title="Amarillo"></button>
+                  <button type="button" class="swatch" data-color="#8f2d56" style="background:#8f2d56" title="Púrpura"></button>
+                  <button type="button" class="swatch" data-color="#006ba6" style="background:#006ba6" title="Azul marino"></button>
+                  <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="Blanco"></button>
+                </div>
+                <input type="hidden" id="heroCopyColor" value="#ffffff" />
+              </div>
             </div>
 
             <!-- Metadatos -->

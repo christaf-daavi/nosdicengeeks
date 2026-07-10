@@ -18,6 +18,12 @@ const blog = defineCollection({
       .optional(),
     draft: z.boolean().default(false),
     slug: z.string().optional(),
+    heroLabel: z.string().optional(),
+    heroTitle: z.string().optional(),
+    heroCopy: z.string().optional(),
+    heroLabelColor: z.string().optional(),
+    heroTitleColor: z.string().optional(),
+    heroCopyColor: z.string().optional(),
   }),
 });
 

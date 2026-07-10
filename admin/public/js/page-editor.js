@@ -1,5 +1,3 @@
-import { createEditor, wireToolbar } from '/js/tiptap-editor.js';
-
 // ── Auth ─────────────────────────────────────────────────────────
 const token = checkAuth();
 if (!token) throw new Error('No auth');
@@ -42,7 +40,19 @@ document.addEventListener('click', (e) => {
 // Envuelto en try/catch: si falla la carga de TipTap (CDN, red, etc.)
 // el resto del editor (slug, título, guardado, carga de la página)
 // debe seguir funcionando en lugar de abortar todo el módulo.
+// Import dinámico (no estático): un fallo al resolver tiptap-editor.js
+// (depende de un CDN externo) no debe abortar la evaluación de todo
+// este módulo — ver mismo fix aplicado en editor.js.
 try {
+  // Guarda: si por cualquier motivo este bloque llegara a correr más de
+  // una vez sobre el mismo documento, destruye la instancia previa antes
+  // de crear otra (ver mismo fix en editor.js).
+  if (editor && typeof editor.destroy === 'function') {
+    editor.destroy();
+    editor = null;
+  }
+
+  const { createEditor, wireToolbar } = await import('/js/tiptap-editor.js');
   editor = createEditor(document.getElementById('editorContentArea'), {});
   wireToolbar(editor, document.getElementById('tiptapToolbar'), {
     onImageRequest: (insertFn) => openContentImageModal(insertFn),

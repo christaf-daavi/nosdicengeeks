@@ -14,7 +14,7 @@ tags:
   - cyberpunk
 author: NosDicenGeeks
 image:
-  src: /images/1783640299039-cyberpunk-2077-review.webp
+  src: /images/1783650793941-cyberpunk-2077-review.webp
   alt: 'Cyberpunk 2077 en 2026: cuando el hype murió y quedó el juego'
 draft: false
 id: ndg-1780250271
@@ -23,6 +23,12 @@ og_description: ''
 og_image: ''
 twitter_card: summary_large_image
 slug: review-cyberpunk-2077
+heroLabel: NosDicenGeeks
+heroTitle: Cyberpunk 2077 en 2026
+heroCopy: Cuando el hype murió y quedó el juego
+heroLabelColor: '#fbbc42'
+heroTitleColor: '#ffffff'
+heroCopyColor: '#0496ff'
 ---
 <h2>TL;DR</h2><p>Si llegaste aquí buscando un número: <strong>8.5/10</strong>. Si querés entender por qué, seguí leyendo.</p><hr><h2>El elefante en la habitación</h2><p>No podemos hablar de Cyberpunk 2077 sin hablar del lanzamiento de diciembre de 2020. CD Projekt Red prometió el RPG de la década, vendió 13 millones de copias en preventa, y lanzó un juego que en consolas de generación anterior literalmente no funcionaba.</p><p>Sony sacó el juego de la PlayStation Store. Las acciones de CDPR cayeron un 27% en un día. Los memes eran crueles y, en muchos casos, merecidos.</p><p>Eso fue hace años. ¿Qué quedó?</p><h2>Night City, 2026</h2><p>La ciudad sigue siendo lo más impresionante del juego. Night City no es un open world genérico: es un personaje con una personalidad agresiva, densa y coherente. Cada barrio tiene su estética, su banda, su nivel de peligro y su historia implícita.</p><pre><code>&gt; Distrito: Watson / Sector: Kabuki
 &gt; Amenaza: ALTA
