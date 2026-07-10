@@ -1,5 +1,3 @@
-import { createEditor, wireToolbar } from '/js/tiptap-editor.js';
-
 // ── Auth ─────────────────────────────────────────────────────────
 const token = checkAuth();
 if (!token) throw new Error('No auth');
@@ -38,10 +36,25 @@ document.addEventListener('click', (e) => {
 });
 
 // ── TipTap init ────────────────────────────────────────────────────
-// Envuelto en try/catch: si falla la carga de TipTap (CDN, red, etc.)
-// el resto del editor (slug, título, guardado, carga del post) debe
-// seguir funcionando en lugar de abortar todo el módulo.
+// Import DINÁMICO (no estático) a propósito: tiptap-editor.js depende
+// de paquetes cargados vía CDN externo (+esm de jsDelivr). Un import
+// estático en la línea 1 que falle en resolverse aborta la evaluación
+// de TODO este módulo — nada de lo que sigue (swatches, guardado,
+// slug) llegaría a ejecutarse nunca. Con import() dinámico dentro de
+// este try/catch, un fallo ahí queda aislado y el resto del editor
+// sigue funcionando con normalidad.
 try {
+  // Guarda: si por cualquier motivo este bloque llegara a correr más de
+  // una vez sobre el mismo documento (doble evaluación del módulo, re-init
+  // manual, etc.), destruye la instancia previa antes de crear otra. Dos
+  // instancias de Editor sobre el mismo elemento es la causa típica de
+  // "Adding different instances of a keyed plugin" en ProseMirror.
+  if (editor && typeof editor.destroy === 'function') {
+    editor.destroy();
+    editor = null;
+  }
+
+  const { createEditor, wireToolbar } = await import('/js/tiptap-editor.js');
   editor = createEditor(document.getElementById('editorContentArea'), {
     onUpdate: () => debounceSEO(),
   });
@@ -329,6 +342,17 @@ async function loadPost(filename) {
 
     if (fm.image && fm.image.src) setCoverPreview(fm.image.src);
 
+    document.getElementById('heroLabel').value = fm.heroLabel || '';
+    document.getElementById('heroTitle').value = fm.heroTitle || '';
+    document.getElementById('heroCopy').value  = fm.heroCopy  || '';
+
+    document.getElementById('heroLabelColor').value = fm.heroLabelColor || '#fbbc42';
+    document.getElementById('heroTitleColor').value = fm.heroTitleColor || '#ffffff';
+    document.getElementById('heroCopyColor').value  = fm.heroCopyColor  || '#ffffff';
+    setActiveSwatch('[data-target="heroLabelColor"]', fm.heroLabelColor || '#fbbc42');
+    setActiveSwatch('[data-target="heroTitleColor"]', fm.heroTitleColor || '#ffffff');
+    setActiveSwatch('[data-target="heroCopyColor"]', fm.heroCopyColor || '#ffffff');
+
     if (editor) editor.commands.setContent(content || '');
     document.getElementById('editorPageTitle').textContent = fm.title || filename;
     document.title = `${fm.title || filename} — Editor`;
@@ -369,7 +393,20 @@ async function savePost(asDraft) {
     ogDescription: document.getElementById('ogDescription').value.trim(),
     ogImage:       document.getElementById('ogImage').value.trim(),
     twitterCard:   document.getElementById('twitterCard').value,
+    heroLabel:     document.getElementById('heroLabel').value.trim(),
+    heroTitle:     document.getElementById('heroTitle').value.trim(),
+    heroCopy:      document.getElementById('heroCopy').value.trim(),
+    heroLabelColor: document.getElementById('heroLabelColor').value,
+    heroTitleColor: document.getElementById('heroTitleColor').value,
+    heroCopyColor:  document.getElementById('heroCopyColor').value,
   };
+
+  // DEBUG temporal — remover una vez confirmado que los colores viajan bien
+  console.log('[hero colors] enviando al backend:', {
+    heroLabelColor: body.heroLabelColor,
+    heroTitleColor: body.heroTitleColor,
+    heroCopyColor: body.heroCopyColor,
+  });
 
   if (coverUrl) body.image = { src: coverUrl, alt: title };
 
@@ -443,10 +480,34 @@ async function runBuildAfterSave() {
 // ── Fecha por defecto ────────────────────────────────────────────
 document.getElementById('postDate').value = new Date().toISOString().split('T')[0];
 
+// ── Swatches de color del hero ────────────────────────────────────
+function setActiveSwatch(groupSelector, color) {
+  const group = document.querySelector(groupSelector);
+  if (!group) return;
+  group.querySelectorAll('.swatch').forEach((sw) => {
+    sw.classList.toggle('selected', sw.dataset.color === color);
+  });
+}
+
+document.querySelectorAll('.color-swatches').forEach((group) => {
+  const targetId = group.dataset.target;
+  const input = document.getElementById(targetId);
+  group.querySelectorAll('.swatch').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      group.querySelectorAll('.swatch').forEach((s) => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      input.value = sw.dataset.color;
+    });
+  });
+});
+
 // ── Init ─────────────────────────────────────────────────────────
 if (editFile) {
   loadPost(editFile);
 } else {
   updateSlugPreview();
   runSEO();
+  setActiveSwatch('[data-target="heroLabelColor"]', '#fbbc42');
+  setActiveSwatch('[data-target="heroTitleColor"]', '#ffffff');
+  setActiveSwatch('[data-target="heroCopyColor"]', '#ffffff');
 }

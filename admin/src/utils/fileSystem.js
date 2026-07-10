@@ -57,6 +57,8 @@ function createPost(data) {
   const {
     title, description = '', content = '', tags = [], author = '', draft = false, pubDate,
     ogTitle, ogDescription, ogImage, twitterCard, slug,
+    heroLabel, heroTitle, heroCopy,
+    heroLabelColor, heroTitleColor, heroCopyColor,
   } = data;
 
   if (!title) throw new Error('El título es requerido');
@@ -81,6 +83,12 @@ function createPost(data) {
     og_description: ogDescription || '',
     og_image: ogImage || '',
     twitter_card: twitterCard || 'summary_large_image',
+    heroLabel: heroLabel || '',
+    heroTitle: heroTitle || '',
+    heroCopy: heroCopy || '',
+    heroLabelColor: heroLabelColor || '#fbbc42',
+    heroTitleColor: heroTitleColor || '#ffffff',
+    heroCopyColor: heroCopyColor || '#ffffff',
   };
 
   const fileContent = matter.stringify(content, frontmatter);
@@ -94,7 +102,12 @@ function updatePost(filename, data) {
   const raw = fs.readFileSync(filepath, 'utf8');
   const { data: existingFrontmatter, content: existingContent } = matter(raw);
 
-  const { content = existingContent, ogTitle, ogDescription, ogImage, twitterCard, slug, ...frontmatterUpdates } = data;
+  const {
+    content = existingContent, ogTitle, ogDescription, ogImage, twitterCard, slug,
+    heroLabel, heroTitle, heroCopy,
+    heroLabelColor, heroTitleColor, heroCopyColor,
+    ...frontmatterUpdates
+  } = data;
 
   const newFrontmatter = { ...existingFrontmatter, ...frontmatterUpdates };
 
@@ -108,6 +121,12 @@ function updatePost(filename, data) {
   if (ogImage !== undefined) newFrontmatter.og_image = ogImage || '';
   if (twitterCard !== undefined) newFrontmatter.twitter_card = twitterCard || 'summary_large_image';
   if (slug !== undefined && slug !== '') newFrontmatter.slug = slugify(slug);
+  if (heroLabel !== undefined) newFrontmatter.heroLabel = heroLabel || '';
+  if (heroTitle !== undefined) newFrontmatter.heroTitle = heroTitle || '';
+  if (heroCopy !== undefined) newFrontmatter.heroCopy = heroCopy || '';
+  if (heroLabelColor !== undefined) newFrontmatter.heroLabelColor = heroLabelColor || '#fbbc42';
+  if (heroTitleColor !== undefined) newFrontmatter.heroTitleColor = heroTitleColor || '#ffffff';
+  if (heroCopyColor !== undefined) newFrontmatter.heroCopyColor = heroCopyColor || '#ffffff';
 
   // Normaliza tags si viene como string
   if (newFrontmatter.tags && !Array.isArray(newFrontmatter.tags)) {

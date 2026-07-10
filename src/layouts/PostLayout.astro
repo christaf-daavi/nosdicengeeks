@@ -13,9 +13,19 @@ interface Props {
   author: string;
   tags: string[];
   image?: { src: string; alt: string };
+  heroLabel?: string;
+  heroTitle?: string;
+  heroCopy?: string;
+  heroLabelColor?: string;
+  heroTitleColor?: string;
+  heroCopyColor?: string;
 }
 
-const { title, description, pubDate, updatedDate, author, tags, image } = Astro.props;
+const {
+  title, description, pubDate, updatedDate, author, tags, image,
+  heroLabel, heroTitle, heroCopy,
+  heroLabelColor, heroTitleColor, heroCopyColor,
+} = Astro.props;
 
 const formattedPubDate = pubDate.toLocaleDateString('es-ES', {
   year: 'numeric',
@@ -72,9 +82,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               class="post-hero__img"
               loading="eager"
               decoding="async"
-              width="1200"
-              height="400"
             />
+            {(heroLabel || heroTitle || heroCopy) && (
+              <div class="post-hero__overlay">
+                {heroLabel && <span class="post-hero__label" style={heroLabelColor ? `color:${heroLabelColor}` : ''}>{heroLabel}</span>}
+                {heroTitle && <p class="post-hero__title" style={heroTitleColor ? `color:${heroTitleColor}` : ''}>{heroTitle}</p>}
+                {heroCopy && <p class="post-hero__copy" style={heroCopyColor ? `color:${heroCopyColor}` : ''}>{heroCopy}</p>}
+              </div>
+            )}
           </div>
         )}
 
@@ -145,10 +160,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <style>
   /* ── Post layout ────────────────────────────────────────── */
   .post-hero {
+    position: relative;
     width: 100%;
-    height: 400px;
+    height: 500px;
     overflow: hidden;
-    border-radius: var(--radius-md);
+    border-radius: 0;
     margin-bottom: var(--space-6);
   }
 
@@ -157,6 +173,41 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     height: 100%;
     object-fit: cover;
     object-position: center center;
+  }
+
+  .post-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.1) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 60px;
+    gap: 12px;
+  }
+
+  .post-hero__label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-yellow, #fbbc42);
+  }
+
+  .post-hero__title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    margin: 0;
+    max-width: 700px;
+  }
+
+  .post-hero__copy {
+    font-size: clamp(1rem, 2vw, 1.35rem);
+    color: rgba(255,255,255,0.85);
+    margin: 0;
+    max-width: 600px;
   }
 
   .post-container {
@@ -405,7 +456,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   @media (max-width: 768px) {
     .post-hero {
-      height: 220px;
+      height: 320px;
+    }
+
+    .post-hero__img {
+      object-position: left top;
+    }
+
+    .post-hero__overlay {
+      padding: 32px 24px;
+      gap: 8px;
+    }
+
+    .post-hero__title {
+      font-size: 1.6rem;
+    }
+
+    .post-hero__copy {
+      font-size: 0.95rem;
     }
 
     .post-header {
