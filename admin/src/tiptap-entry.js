@@ -1,0 +1,9 @@
+export { Editor } from '@tiptap/core';
+export { StarterKit } from '@tiptap/starter-kit';
+export { TextStyle } from '@tiptap/extension-text-style';
+export { Color } from '@tiptap/extension-color';
+export { Underline } from '@tiptap/extension-underline';
+export { TextAlign } from '@tiptap/extension-text-align';
+export { Highlight } from '@tiptap/extension-highlight';
+export { Link } from '@tiptap/extension-link';
+export { Image } from '@tiptap/extension-image';
