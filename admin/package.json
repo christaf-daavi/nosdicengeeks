@@ -7,6 +7,16 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@tiptap/core": "^3.27.4",
+    "@tiptap/extension-color": "^3.27.4",
+    "@tiptap/extension-highlight": "^3.27.4",
+    "@tiptap/extension-image": "^3.27.4",
+    "@tiptap/extension-link": "^3.27.4",
+    "@tiptap/extension-text-align": "^3.27.4",
+    "@tiptap/extension-text-style": "^3.27.4",
+    "@tiptap/extension-underline": "^3.27.4",
+    "@tiptap/pm": "^3.27.4",
+    "@tiptap/starter-kit": "^3.27.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -16,5 +26,8 @@
     "marked": "^18.0.5",
     "multer": "^2.1.1",
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

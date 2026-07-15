@@ -1,19 +1,23 @@
 // Módulo compartido: inicializa TipTap y conecta la barra de herramientas.
 // Se carga como <script type="module">; los paquetes de Tiptap se resuelven
-// vía el CDN +esm de jsDelivr, que pre-empaqueta cada paquete (incluyendo
-// @tiptap/pm) en un único módulo ESM listo para navegador. Los builds UMD
-// publicados por Tiptap 2.x NO son utilizables con <script> plano: sus
-// bundles internos esperan variables globales (global.core, global.state…)
-// que solo un bundler resuelve correctamente, y @tiptap/pm no publica UMD.
-import { Editor } from 'https://cdn.jsdelivr.net/npm/@tiptap/core@2.11.5/+esm';
-import StarterKit from 'https://cdn.jsdelivr.net/npm/@tiptap/starter-kit@2.11.5/+esm';
-import TextStyle from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-text-style@2.11.5/+esm';
-import Color from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-color@2.11.5/+esm';
-import Underline from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-underline@2.11.5/+esm';
-import TextAlign from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-text-align@2.11.5/+esm';
-import Highlight from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-highlight@2.11.5/+esm';
-import Link from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-link@2.11.5/+esm';
-import ImageExt from 'https://cdn.jsdelivr.net/npm/@tiptap/extension-image@2.11.5/+esm';
+// desde un bundle local generado con esbuild (ver admin/build-tiptap.js),
+// que empaqueta @tiptap/core, @tiptap/pm y las extensiones en un único
+// módulo ESM. Reemplaza al CDN +esm de jsDelivr: cargar cada paquete por
+// separado desde jsDelivr producía instancias duplicadas de @tiptap/pm
+// (error "Adding different instances of a keyed plugin"), porque cada
+// módulo +esm resolvía su propia copia de @tiptap/pm en vez de compartir
+// una sola instancia.
+import {
+  Editor,
+  StarterKit,
+  TextStyle,
+  Color,
+  Underline,
+  TextAlign,
+  Highlight,
+  Link,
+  Image as ImageExt,
+} from '/js/tiptap-bundle.js';
 
 // @tiptap/extension-emoji no existía todavía en la serie 2.11.x (publicado
 // recién en 2.27+). El picker de emojis se implementa abajo con un panel
