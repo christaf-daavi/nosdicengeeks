@@ -2,7 +2,15 @@
 const token = checkAuth();
 if (!token) throw new Error('No auth');
 
-const SITE_URL = 'https://dev.nosdicengeeks.com';
+let SITE_URL = 'https://nosdicengeeks.com';
+async function loadSiteUrl() {
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) SITE_URL = (await res.json()).siteUrl || SITE_URL;
+  } catch {
+    // Si falla, se conserva el fallback de producción
+  }
+}
 const selectedFiles = new Set();
 
 // ── Sidebar móvil ────────────────────────────────────────────────
@@ -287,5 +295,8 @@ async function triggerBuild() {
 }
 
 // ── Init ─────────────────────────────────────────────────────────
-updateBulkDeleteButton();
-loadPosts();
+(async () => {
+  await loadSiteUrl();
+  updateBulkDeleteButton();
+  loadPosts();
+})();

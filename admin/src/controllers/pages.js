@@ -17,6 +17,18 @@ function resolvePath(filename) {
   return resolved;
 }
 
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 exports.getAll = (req, res) => {
   try {
     const files = fs.readdirSync(PAGES_DIR).filter((f) => f.endsWith('.md'));
@@ -57,11 +69,7 @@ exports.update = (req, res) => {
     const raw = fs.readFileSync(filepath, 'utf8');
     const { data: existingFrontmatter, content: existingContent } = matter(raw);
 
-    // El campo slug nunca se actualiza desde el admin: las páginas fijas
-    // (about, tags) tienen su URL hardcodeada en Astro (getEntry por ID
-    // de archivo), así que el slug del frontmatter no controla el ruteo.
-    // Si el cliente lo envía, se ignora explícitamente.
-    const { content = existingContent, title, description, ogTitle, ogDescription, ogImage, twitterCard } = req.body;
+    const { content = existingContent, title, description, ogTitle, ogDescription, ogImage, twitterCard, slug, template } = req.body;
 
     const newFrontmatter = { ...existingFrontmatter };
     if (title !== undefined) newFrontmatter.title = title;
@@ -70,6 +78,10 @@ exports.update = (req, res) => {
     if (ogDescription !== undefined) newFrontmatter.og_description = ogDescription || '';
     if (ogImage !== undefined) newFrontmatter.og_image = ogImage || '';
     if (twitterCard !== undefined) newFrontmatter.twitter_card = twitterCard || 'summary_large_image';
+    if (slug !== undefined && slug !== '') {
+      newFrontmatter.slug = slugify(slug);
+    }
+    if (template !== undefined) newFrontmatter.template = template || '';
     newFrontmatter.updatedAt = new Date().toISOString().split('T')[0];
 
     const fileContent = matter.stringify(content, newFrontmatter);

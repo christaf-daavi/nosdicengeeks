@@ -1,0 +1,350 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TagBadge from '../components/TagBadge.astro';
+
+export async function getStaticPaths() {
+  // (Declarado DENTRO de la función: Astro extrae getStaticPaths a un
+  // chunk aislado en build y no captura de forma confiable const's
+  // declaradas fuera de ella en el mismo frontmatter.)
+  const pages = await getCollection('pages', ({ data }) => !data.draft);
+  return pages.map((page) => ({
+    params: { page: page.data.slug || page.id },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+const template = page.data.template || null;
+
+// El contenido markdown se renderiza para todas las páginas excepto "tags",
+// que no tiene cuerpo propio: su contenido es la nube de tags calculada
+// desde la colección blog.
+let Content;
+if (template !== 'tags') {
+  ({ Content } = await render(page));
+}
+
+let tags: [string, number][] = [];
+function tagSize(count: number): string {
+  const counts = tags.map(([, c]) => c);
+  const minCount = Math.min(...counts);
+  const maxCount = Math.max(...counts);
+  if (maxCount === minCount) return '1rem';
+  const scale = (count - minCount) / (maxCount - minCount);
+  const size = 0.85 + scale * 0.65;
+  return `${size.toFixed(2)}rem`;
+}
+
+if (template === 'tags') {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const tagMap = posts.reduce<Record<string, number>>((acc, post) => {
+    post.data.tags.forEach((tag) => {
+      acc[tag] = (acc[tag] ?? 0) + 1;
+    });
+    return acc;
+  }, {});
+  tags = Object.entries(tagMap).sort(([a], [b]) => a.localeCompare(b));
+}
+---
+
+<BaseLayout
+  title={page.data.og_title || page.data.title}
+  description={page.data.og_description || page.data.description}
+  image={page.data.og_image || undefined}
+>
+  {template === 'about' ? (
+    <section class="section">
+      <div class="container about-container">
+
+        <header class="about-header">
+          <div class="about-prompt">
+            <span class="prompt-user">nosdicengeeks</span>
+            <span class="prompt-sep">@</span>
+            <span class="prompt-host">blog</span>
+            <span class="prompt-sep">:~$</span>
+            <span class="prompt-cmd"> cat about.md</span>
+          </div>
+          <h1 class="about-title">{page.data.title}</h1>
+        </header>
+
+        <div class="about-body prose">
+          <Content />
+        </div>
+
+        <div class="about-footer">
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat__value">∞</span>
+              <span class="stat__label">// tabs abiertos</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">☕</span>
+              <span class="stat__label">// combustible principal</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">01</span>
+              <span class="stat__label">// modo de operación</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">100%</span>
+              <span class="stat__label">// opiniones propias</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  ) : template === 'tags' ? (
+    <section class="section">
+      <div class="container">
+        <div class="section__header">
+          <h1 class="section__title">Tags</h1>
+          <p class="section__subtitle">
+            {tags.length} {tags.length === 1 ? 'tema' : 'temas'} en el blog
+          </p>
+        </div>
+
+        {tags.length > 0 ? (
+          <div class="tag-cloud" role="list" aria-label="Nube de tags">
+            {tags.map(([tag, count], i) => (
+              <span role="listitem" style={`font-size: ${tagSize(count)}`} title={`${count} ${count === 1 ? 'post' : 'posts'}`}>
+                <TagBadge tag={tag} index={i} href={`/tags/${tag}`} count={count} />
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p class="empty-state">// No hay tags todavía.</p>
+        )}
+      </div>
+    </section>
+  ) : (
+    <section class="section">
+      <div class="container page-container">
+        <h1 class="page-title">{page.data.title}</h1>
+        <div class="page-body prose">
+          <Content />
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  /* ── Genérico ─────────────────────────── */
+  .page-container {
+    max-width: 780px;
+  }
+
+  .page-title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    margin-bottom: var(--space-8);
+  }
+
+  .page-body {
+    font-size: var(--text-lg);
+    line-height: 1.8;
+  }
+
+  /* ── About ────────────────────────────── */
+  .about-container {
+    max-width: 780px;
+  }
+
+  .about-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .about-prompt {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+    opacity: 0.7;
+  }
+
+  .prompt-user  { color: var(--color-green); }
+  .prompt-sep   { color: var(--color-text-faint); }
+  .prompt-host  { color: var(--color-blue); }
+  .prompt-cmd   { color: var(--color-text-muted); }
+
+  .about-title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  .about-body {
+    font-size: var(--text-lg);
+    line-height: 1.8;
+  }
+
+  .about-body :global(h2) {
+    font-size: var(--text-2xl);
+    margin-top: var(--space-12);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border-muted);
+  }
+
+  .about-body :global(h2::before) {
+    content: '## ';
+    color: var(--color-green);
+    opacity: 0.6;
+    font-weight: 300;
+  }
+
+  .about-body :global(p) {
+    margin-bottom: var(--space-6);
+    color: var(--color-text);
+  }
+
+  .about-body :global(ul) {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .about-body :global(li) {
+    margin-bottom: var(--space-2);
+  }
+
+  .about-body :global(ul li::marker) {
+    color: var(--color-green);
+  }
+
+  .about-body :global(strong) {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .about-body :global(em) {
+    color: var(--color-text-muted);
+  }
+
+  .about-body :global(blockquote) {
+    border-left: 3px solid var(--color-green);
+    padding: var(--space-3) var(--space-6);
+    margin-block: var(--space-6);
+    background: rgba(0, 255, 65, 0.04);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .about-body :global(blockquote p) {
+    margin-bottom: 0;
+  }
+
+  .about-body :global(a) {
+    color: var(--color-blue);
+    text-underline-offset: 3px;
+  }
+
+  .about-body :global(a:hover) {
+    color: var(--color-green);
+    text-shadow: none;
+  }
+
+  .about-footer {
+    margin-top: var(--space-16);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  .stat:hover {
+    border-color: var(--color-green);
+    box-shadow: var(--glow-green);
+  }
+
+  .stat__value {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-green);
+  }
+
+  .stat__label {
+    font-family: var(--font-code);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+  }
+
+  @media (max-width: 768px) {
+    .about-body {
+      font-size: var(--text-base);
+    }
+  }
+
+  /* ── Tags ─────────────────────────────── */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    padding-block: var(--space-4);
+  }
+
+  .tag-cloud__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    font-family: var(--font-code);
+    font-weight: 500;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: rgba(0, 255, 65, 0.06);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    transition:
+      color var(--transition),
+      background var(--transition),
+      border-color var(--transition),
+      box-shadow var(--transition),
+      transform var(--transition);
+    line-height: 1;
+  }
+
+  .tag-cloud__item:hover {
+    color: var(--color-green);
+    background: rgba(0, 255, 65, 0.12);
+    border-color: var(--color-green);
+    box-shadow: var(--glow-green);
+    transform: translateY(-2px);
+    text-shadow: none;
+  }
+
+  .tag-cloud__count {
+    font-size: 0.7em;
+    color: var(--color-text-faint);
+    font-weight: 400;
+    transition: color var(--transition);
+  }
+
+  .tag-cloud__item:hover .tag-cloud__count {
+    color: var(--color-green-dim);
+  }
+
+  .empty-state {
+    font-family: var(--font-code);
+    color: var(--color-text-faint);
+    padding: var(--space-16) 0;
+    text-align: center;
+  }
+</style>
