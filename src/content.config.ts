@@ -51,6 +51,7 @@ const pages = defineCollection({
     draft: z.boolean().default(false),
     updatedAt: z.coerce.date().optional(),
     slug: z.string().optional(),
+    template: z.string().optional(),
   }),
 });
 

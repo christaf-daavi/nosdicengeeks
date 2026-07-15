@@ -2,7 +2,13 @@
 const token = checkAuth();
 if (!token) throw new Error('No auth');
 
-const SITE_URL = 'https://dev.nosdicengeeks.com';
+let SITE_URL = 'https://nosdicengeeks.com';
+try {
+  const configRes = await fetch('/api/config');
+  if (configRes.ok) SITE_URL = (await configRes.json()).siteUrl || SITE_URL;
+} catch {
+  // Si falla, se conserva el fallback de producción
+}
 
 // ── State ────────────────────────────────────────────────────────
 const params   = new URLSearchParams(window.location.search);

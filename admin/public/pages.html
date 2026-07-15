@@ -110,6 +110,16 @@
 <script>
 const token = () => localStorage.getItem('ndg_token');
 
+let SITE_URL = 'https://nosdicengeeks.com';
+async function loadSiteUrl() {
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) SITE_URL = (await res.json()).siteUrl || SITE_URL;
+  } catch {
+    // Si falla, se conserva el fallback de producción
+  }
+}
+
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
 });
@@ -163,7 +173,7 @@ async function loadPages() {
       <tr>
         <td class="col-id">${escHtml(p.id)}</td>
         <td><div class="post-title">${escHtml(p.title)}</div></td>
-        <td class="col-url"><a href="https://dev.nosdicengeeks.com/${escHtml(p.slug)}" target="_blank">/${escHtml(p.slug)}</a></td>
+        <td class="col-url"><a href="${SITE_URL}/${escHtml(p.slug)}" target="_blank">/${escHtml(p.slug)}</a></td>
         <td class="col-date">${formatDate(p.updatedAt)}</td>
         <td class="col-actions">
           <a href="/page-editor.html?page=${encodeURIComponent(p.filename)}" class="btn-icon" title="Editar">
@@ -205,7 +215,10 @@ async function triggerBuild() {
   }
 }
 
-loadPages();
+(async () => {
+  await loadSiteUrl();
+  loadPages();
+})();
 </script>
 </body>
 </html>

@@ -9,7 +9,8 @@ og_description: ''
 og_image: ''
 twitter_card: summary_large_image
 draft: false
-updatedAt: '2026-07-04'
-slug: tags
+updatedAt: '2026-07-15'
+slug: etiquetas
+template: tags
 ---
-
+<p></p>

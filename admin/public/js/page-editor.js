@@ -2,7 +2,13 @@
 const token = checkAuth();
 if (!token) throw new Error('No auth');
 
-const SITE_URL = 'https://dev.nosdicengeeks.com';
+let SITE_URL = 'https://nosdicengeeks.com';
+try {
+  const configRes = await fetch('/api/config');
+  if (configRes.ok) SITE_URL = (await configRes.json()).siteUrl || SITE_URL;
+} catch {
+  // Si falla, se conserva el fallback de producción
+}
 
 // ── State ────────────────────────────────────────────────────────
 const params     = new URLSearchParams(window.location.search);
@@ -179,6 +185,7 @@ async function loadPage() {
     document.getElementById('pageTitle').value       = fm.title       || '';
     document.getElementById('pageDescription').value = fm.description || '';
     document.getElementById('pageSlug').value         = fm.slug || pageFile.replace(/\.md$/, '');
+    document.getElementById('pageTemplate').value      = fm.template || '';
     updateSlugPreview();
 
     document.getElementById('ogTitle').value          = fm.og_title       || '';
@@ -211,6 +218,8 @@ async function savePage() {
 
   const body = {
     title,
+    slug:          document.getElementById('pageSlug')?.value?.trim(),
+    template:      document.getElementById('pageTemplate')?.value || '',
     description:   document.getElementById('pageDescription').value.trim(),
     content:       editor ? editor.getHTML() : '',
     ogTitle:       document.getElementById('ogTitle').value.trim(),
