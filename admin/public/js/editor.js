@@ -153,7 +153,13 @@ function removeTag(i) {
 document.getElementById('tagInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
-    addTag(e.target.value);
+    // Soporta pegar/escribir varios tags separados por comas de una vez
+    // (ej: "IA, Claude, ChatGPT") además del flujo tag-por-tecla existente.
+    e.target.value
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .forEach((t) => addTag(t));
     e.target.value = '';
   } else if (e.key === 'Backspace' && !e.target.value && tags.length) {
     removeTag(tags.length - 1);
