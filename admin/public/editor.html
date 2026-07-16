@@ -310,6 +310,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Posts
         </a>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openPreview()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
         <span style="color:var(--text-muted);">/</span>
         <span class="topbar__title" id="editorPageTitle">Nuevo post</span>
       </div>
@@ -398,6 +402,17 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Haz clic o arrastra una imagen
                 <div style="font-size:.72rem;margin-top:4px;opacity:.6;">JPG, PNG, WebP, GIF · máx 10MB</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <label class="btn btn-secondary btn-sm" style="cursor:pointer;flex:1;justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Subir imagen
+                  <input type="file" id="coverFileInput" accept="image/*" style="display:none;" />
+                </label>
+                <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="openCoverMediaModal()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  Buscar en Media
+                </button>
               </div>
               <img id="coverPreview" alt="Vista previa de portada" />
               <div id="coverUploadStatus" class="save-status" style="margin-top:6px;"></div>
@@ -537,6 +552,19 @@
   </main>
 </div>
 
+<!-- ── Modal selector de imagen (portada) ─────────── -->
+<div class="modal-overlay" id="coverMediaModal">
+  <div class="modal" style="max-width:700px;width:90%;">
+    <div class="modal__title">Seleccionar imagen de portada</div>
+    <div class="modal__body">
+      <div id="coverMediaGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;max-height:400px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" onclick="closeCoverMediaModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal selector de imagen (og:image) ──────── -->
 <div class="modal-overlay" id="ogImageModal">
   <div class="modal" style="max-width:640px;width:90vw;">
@@ -564,6 +592,30 @@
     <div class="modal__actions">
       <button class="btn btn-ghost" onclick="closeContentImageModal()">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Preview full-screen ─────────────────────── -->
+<div id="previewModal" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);overflow-y:auto;">
+  <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg);position:sticky;top:0;z-index:1;">
+    <button class="btn btn-ghost btn-sm" onclick="closePreview()">✕ Cerrar preview</button>
+    <span style="font-size:.85rem;color:var(--text-muted);">Vista previa — los estilos pueden diferir ligeramente del blog real</span>
+  </div>
+  <div id="previewContent" style="max-width:780px;margin:0 auto;padding:40px 24px;">
+    <!-- Hero imagen si existe -->
+    <div id="previewHero" style="display:none;margin-bottom:32px;border-radius:8px;overflow:hidden;height:400px;">
+      <img id="previewHeroImg" style="width:100%;height:100%;object-fit:cover;" />
+    </div>
+    <!-- Tags -->
+    <div id="previewTags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>
+    <!-- Título -->
+    <h1 id="previewTitle" style="font-size:2.2rem;font-weight:800;color:var(--text-heading);margin-bottom:8px;line-height:1.2;"></h1>
+    <!-- Descripción -->
+    <p id="previewDesc" style="color:var(--text-muted);font-size:1rem;margin-bottom:24px;"></p>
+    <!-- Autor y fecha -->
+    <div id="previewMeta" style="font-size:.85rem;color:var(--text-muted);margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border);"></div>
+    <!-- Contenido -->
+    <div id="previewBody" style="font-size:1.05rem;line-height:1.8;color:var(--text);"></div>
   </div>
 </div>
 

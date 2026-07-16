@@ -12,7 +12,7 @@ try {
 
 // ── State ────────────────────────────────────────────────────────
 const params   = new URLSearchParams(window.location.search);
-const editFile = params.get('file') || null;
+let   editFile = params.get('file') || null;
 let   coverUrl = null;
 let   tags     = [];
 let   editor   = null;
@@ -301,6 +301,27 @@ document.getElementById('ogImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeOgImageModal();
 });
 
+// Imagen de portada (buscar en Media)
+function openCoverMediaModal() {
+  document.getElementById('coverMediaModal').classList.add('open');
+  loadMediaGrid('coverMediaGrid', (url) => {
+    setCoverPreview(url);
+    document.getElementById('coverUploadStatus').textContent = '';
+    closeCoverMediaModal();
+  });
+}
+function closeCoverMediaModal() {
+  document.getElementById('coverMediaModal').classList.remove('open');
+}
+document.getElementById('coverMediaModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeCoverMediaModal();
+});
+
+document.getElementById('coverFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) uploadImage(file);
+});
+
 // Imagen dentro del contenido (TipTap)
 function openContentImageModal(insertFn) {
   pendingContentImageInsert = insertFn;
@@ -444,6 +465,7 @@ async function savePost(asDraft) {
 
     // Si era nuevo, redirige al editor del archivo creado
     if (!editFile && data.filename) {
+      editFile = data.filename;
       history.replaceState(null, '', `/editor.html?file=${encodeURIComponent(data.filename)}`);
       document.getElementById('editorPageTitle').textContent = title;
     }
@@ -506,6 +528,48 @@ document.querySelectorAll('.color-swatches').forEach((group) => {
     });
   });
 });
+
+// ── Preview en vivo ─────────────────────────────────────────────
+function openPreview() {
+  const title   = document.getElementById('postTitle').value || 'Sin título';
+  const desc    = document.getElementById('postDescription').value || '';
+  const author  = document.getElementById('postAuthor').value || '';
+  const content = editor ? editor.getHTML() : '';
+  const coverImg = coverUrl || '';
+
+  // Hero
+  const hero    = document.getElementById('previewHero');
+  const heroImg = document.getElementById('previewHeroImg');
+  if (coverImg) { heroImg.src = coverImg; hero.style.display = 'block'; }
+  else { hero.style.display = 'none'; }
+
+  // Tags
+  const tagsDiv = document.getElementById('previewTags');
+  tagsDiv.innerHTML = tags.map((t) =>
+    `<span style="padding:3px 10px;background:rgba(4,150,255,.12);color:#0496ff;border-radius:4px;font-size:.8rem;">#${escHtml(t)}</span>`
+  ).join('');
+
+  // Título, desc, meta
+  document.getElementById('previewTitle').textContent = title;
+  document.getElementById('previewDesc').textContent  = desc;
+  document.getElementById('previewMeta').textContent  = author ? `// autor ${author}` : '';
+
+  // Contenido HTML de TipTap
+  document.getElementById('previewBody').innerHTML = content;
+
+  document.getElementById('previewModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview() {
+  document.getElementById('previewModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+window.openPreview          = openPreview;
+window.closePreview         = closePreview;
+window.openCoverMediaModal  = openCoverMediaModal;
+window.closeCoverMediaModal = closeCoverMediaModal;
 
 // ── Init ─────────────────────────────────────────────────────────
 if (editFile) {
