@@ -28,7 +28,7 @@ jobs:
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "cd /var/www/nosdicengeeks-prod && sudo -u ubuntu git pull origin main",
+              "cd /var/www/nosdicengeeks-prod && sudo -u ubuntu git stash && sudo -u ubuntu git pull origin main",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod && npm install --production=false\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod && npm run build\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod/admin && npm install --production=false\"",

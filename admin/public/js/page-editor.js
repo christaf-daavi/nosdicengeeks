@@ -156,6 +156,42 @@ document.getElementById('ogImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeOgImageModal();
 });
 
+async function uploadOgImage(file) {
+  const status = document.getElementById('ogImageUploadStatus');
+  status.textContent = 'Subiendo…';
+  status.style.color = 'var(--text-muted)';
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    });
+    if (res.status === 401 || res.status === 403) { logout(); return; }
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      status.textContent = data.error || 'Error al subir';
+      status.style.color = 'var(--brand-pink)';
+      return;
+    }
+    document.getElementById('ogImage').value = data.url;
+    status.textContent = `${data.filename} · ${data.width}×${data.height}px`;
+    status.style.color = '#10b981';
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    status.style.color = 'var(--brand-pink)';
+  }
+}
+
+document.getElementById('ogImageFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) uploadOgImage(file);
+});
+
 // Imagen dentro del contenido (TipTap)
 function openContentImageModal(insertFn) {
   pendingContentImageInsert = insertFn;
