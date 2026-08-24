@@ -26,3 +26,4 @@ pnpm-debug.log*
 # admin CMS
 admin/node_modules/
 admin/.env
+admin/data/users.json
