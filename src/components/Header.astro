@@ -1,9 +1,29 @@
 ---
-const navLinks = [
+import fs from 'node:fs';
+import path from 'node:path';
+
+const DEFAULT_MENU = [
   { href: '/',       label: 'Inicio'    },
   { href: '/tags',   label: 'Etiquetas' },
   { href: '/about',  label: 'Nosotros'  },
 ];
+
+// admin/data/site.json es contenido editable desde el CMS (gitignored: cada
+// servidor tiene el suyo, no vive en git). Si falta —checkout nuevo antes de
+// que el guard del deploy lo cree— el build no debe romperse por eso.
+function readMenu() {
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), 'admin/data/site.json'), 'utf8');
+    const menu = JSON.parse(raw).menu;
+    return Array.isArray(menu) && menu.length
+      ? menu.map((item) => ({ href: item.href, label: item.label }))
+      : DEFAULT_MENU;
+  } catch {
+    return DEFAULT_MENU;
+  }
+}
+
+const navLinks = readMenu();
 
 const currentPath = Astro.url.pathname;
 ---
