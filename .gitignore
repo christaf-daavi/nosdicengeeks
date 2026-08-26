@@ -28,3 +28,4 @@ admin/node_modules/
 admin/.env
 admin/.env.local
 admin/data/site.json
+admin/data/users.json
