@@ -10,7 +10,7 @@ propio (Node.js/Express) para administrar posts, páginas, home y menú desde
 /
 ├── src/                  # Blog Astro (posts, páginas, componentes, layouts)
 ├── admin/                # CMS (API Express + panel HTML/JS estático)
-│   ├── data/             # users.json, site.json (contenido editable, gitignored salvo users.json)
+│   ├── data/             # users.json, site.json (ambos gitignored, locales por entorno)
 │   ├── public/            # Panel del admin (dashboard, editores, login)
 │   └── src/               # Controllers, rutas, middlewares
 └── package.json
@@ -60,9 +60,22 @@ checkout, `/var/www/nosdicengeeks`.
 
 ### Datos locales (`admin/data/`)
 
-- `users.json` — **está versionado en git**: las credenciales son las mismas
-  que en dev/prod. Si no existe (checkout nuevo), hay que crearlo con al
-  menos un usuario `admin` (username, password hasheado con bcrypt, role).
+- `users.json` — **gitignored** (credenciales no se versionan). Si no existe
+  (checkout nuevo), hay que crearlo con al menos un usuario `admin`:
+
+  ```sh
+  node -e "console.log(require('bcryptjs').hashSync('TU_PASSWORD', 10))"
+  ```
+
+  y pegar el hash resultante en `admin/data/users.json`:
+
+  ```json
+  [{ "id": 1, "username": "admin", "password": "<hash>", "role": "admin", "createdAt": "2026-01-01T00:00:00.000Z" }]
+  ```
+
+  El deploy de producción crea este archivo automáticamente (con `[]`,
+  vacío) si no existe en el servidor — hay que dar de alta el usuario admin
+  ahí después del primer deploy.
 - `site.json` — contenido editable del home y el menú (gitignored). Si no
   existe, el blog usa valores por defecto embebidos en `index.astro` /
   `Header.astro`, y el admin lo crea automáticamente al guardar desde
