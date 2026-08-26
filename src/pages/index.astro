@@ -2,10 +2,49 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlogPostCard from '../components/BlogPostCard.astro';
 import { getCollection } from 'astro:content';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const allPosts = (await getCollection('blog'))
   .filter(post => !post.data.draft)
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const DEFAULT_SITE_CONTENT = {
+  hero: {
+    title: 'Bienvenido a',
+    titleAccent: 'NosDicenGeeks',
+    subtitle: 'Tecnología, cultura geek y todo lo que el mundo tech nos dice… a nuestra manera.',
+  },
+  topics: {
+    sectionTitle: '¿De qué hablamos?',
+    items: [
+      { icon: '📱', name: 'Tecnología', desc: 'Lo último en tech, gadgets y software' },
+      { icon: '🎮', name: 'Videojuegos', desc: 'Reviews, análisis y noticias gaming' },
+      { icon: '🎬', name: 'Cultura Geek', desc: 'Cine, series, anime y más' },
+    ],
+  },
+  latestPosts: {
+    title: 'Últimas entradas',
+    subtitle: 'Lo más reciente del universo geek',
+  },
+};
+
+// admin/data/site.json es contenido editable desde el CMS (gitignored: cada
+// servidor tiene el suyo, no vive en git). Si falta —checkout nuevo antes de
+// que el guard del deploy lo cree— el build no debe romperse por eso.
+function readSiteContent() {
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), 'admin/data/site.json'), 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return DEFAULT_SITE_CONTENT;
+  }
+}
+
+const site = readSiteContent();
+const hero = site.hero || DEFAULT_SITE_CONTENT.hero;
+const topics = site.topics || DEFAULT_SITE_CONTENT.topics;
+const latestPosts = site.latestPosts || DEFAULT_SITE_CONTENT.latestPosts;
 ---
 
 <BaseLayout
@@ -15,33 +54,25 @@ const allPosts = (await getCollection('blog'))
   <section class="hero">
     <div class="container">
       <h1 class="hero__title">
-        Bienvenido a <span class="accent">NosDicenGeeks</span>
+        {hero.title} <span class="accent">{hero.titleAccent}</span>
       </h1>
       <p class="hero__subtitle">
-        Tecnología, cultura geek y todo lo que el mundo tech nos dice… a nuestra manera.
+        {hero.subtitle}
       </p>
     </div>
   </section>
 
   <section class="topics">
     <div class="container">
-      <h2 class="topics__title">¿De qué hablamos?</h2>
+      <h2 class="topics__title">{topics.sectionTitle}</h2>
       <div class="topics__grid">
-        <div class="topic-card">
-          <span class="topic-card__icon">📱</span>
-          <h3 class="topic-card__name">Tecnología</h3>
-          <p class="topic-card__desc">Lo último en tech, gadgets y software</p>
-        </div>
-        <div class="topic-card">
-          <span class="topic-card__icon">🎮</span>
-          <h3 class="topic-card__name">Videojuegos</h3>
-          <p class="topic-card__desc">Reviews, análisis y noticias gaming</p>
-        </div>
-        <div class="topic-card">
-          <span class="topic-card__icon">🎬</span>
-          <h3 class="topic-card__name">Cultura Geek</h3>
-          <p class="topic-card__desc">Cine, series, anime y más</p>
-        </div>
+        {topics.items.map((item) => (
+          <div class="topic-card">
+            <span class="topic-card__icon">{item.icon}</span>
+            <h3 class="topic-card__name">{item.name}</h3>
+            <p class="topic-card__desc">{item.desc}</p>
+          </div>
+        ))}
       </div>
     </div>
   </section>
@@ -49,8 +80,8 @@ const allPosts = (await getCollection('blog'))
   <section class="section">
     <div class="container">
       <div class="section__header">
-        <h2 class="section__title">Últimas entradas</h2>
-        <p class="section__subtitle">Lo más reciente del universo geek</p>
+        <h2 class="section__title">{latestPosts.title}</h2>
+        <p class="section__subtitle">{latestPosts.subtitle}</p>
       </div>
 
       {allPosts.length > 0 ? (
@@ -95,7 +126,7 @@ const allPosts = (await getCollection('blog'))
 
   .topics__grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: var(--space-6);
   }
 

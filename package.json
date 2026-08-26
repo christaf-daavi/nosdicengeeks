@@ -9,7 +9,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "dev:blog": "astro dev",
+    "dev:admin": "npm run dev --prefix admin",
+    "dev:all": "concurrently -n blog,admin -c blue,magenta \"npm:dev:blog\" \"npm:dev:admin\""
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.18",
@@ -17,6 +20,7 @@
     "astro": "^6.1.1"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "sharp": "^0.34.5"
   }
 }

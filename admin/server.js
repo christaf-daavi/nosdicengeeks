@@ -1,8 +1,12 @@
-require('dotenv').config();
+const path = require('path');
+// .env.local tiene prioridad para desarrollo local (gitignored, no pisa el
+// .env de los servidores dev/prod). dotenv no sobreescribe variables ya
+// definidas, así que cargarlo primero le da precedencia sobre .env.
+require('dotenv').config({ path: path.join(__dirname, '.env.local') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 
 const apiRoutes = require('./src/routes/api');
 

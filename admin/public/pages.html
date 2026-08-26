@@ -37,6 +37,10 @@
         </svg>
         Páginas
       </a>
+      <a href="/menu-editor.html" class="nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        Menú Principal
+      </a>
       <a href="/media.html" class="nav-item">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Media
@@ -156,8 +160,31 @@ function hideAlert(id) {
   document.getElementById(id).classList.remove('show');
 }
 
+async function homeRowHtml() {
+  let updatedAt = null;
+  try {
+    const res = await fetch('/api/site-content', { headers: { Authorization: `Bearer ${token()}` } });
+    if (res.ok) updatedAt = (await res.json()).updatedAt || null;
+  } catch {
+    // Si falla, se muestra la fila igual pero sin fecha
+  }
+  return `
+    <tr>
+      <td class="col-id">home</td>
+      <td><div class="post-title">Inicio</div></td>
+      <td class="col-url"><a href="${SITE_URL}/" target="_blank">/</a></td>
+      <td class="col-date">${formatDate(updatedAt)}</td>
+      <td class="col-actions">
+        <a href="/home-editor.html" class="btn-icon" title="Editar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </a>
+      </td>
+    </tr>`;
+}
+
 async function loadPages() {
   const tbody = document.getElementById('pagesBody');
+  const homeRow = await homeRowHtml();
   try {
     const res = await fetch('/api/pages', { headers: { Authorization: `Bearer ${token()}` } });
     if (res.status === 401 || res.status === 403) { logout(); return; }
@@ -165,11 +192,11 @@ async function loadPages() {
     const pages = await res.json();
 
     if (!pages.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>No hay páginas configuradas.</p></div></td></tr>`;
+      tbody.innerHTML = homeRow + `<tr><td colspan="5"><div class="empty-state"><p>No hay páginas configuradas.</p></div></td></tr>`;
       return;
     }
 
-    tbody.innerHTML = pages.map((p) => `
+    tbody.innerHTML = homeRow + pages.map((p) => `
       <tr>
         <td class="col-id">${escHtml(p.id)}</td>
         <td><div class="post-title">${escHtml(p.title)}</div></td>
@@ -182,7 +209,7 @@ async function loadPages() {
         </td>
       </tr>`).join('');
   } catch {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Error al cargar páginas.</p></div></td></tr>`;
+    tbody.innerHTML = homeRow + `<tr><td colspan="5"><div class="empty-state"><p>Error al cargar páginas.</p></div></td></tr>`;
   }
 }
 
