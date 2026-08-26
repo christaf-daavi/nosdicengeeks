@@ -3,24 +3,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogPostCard from '../../components/BlogPostCard.astro';
 import TagBadge from '../../components/TagBadge.astro';
 import { getCollection } from 'astro:content';
+import { getTagsPageSlug } from '../../lib/tagsSlug';
 
 export async function getStaticPaths() {
+  // El segmento [page] acá SIEMPRE es el slug configurado para la página
+  // de tags (no cualquier página): getStaticPaths solo devuelve rutas con
+  // ese valor fijo, así que /{otroSlug}/{tag} nunca matchea este archivo.
+  const tagsSlug = await getTagsPageSlug();
   const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
 
-  const tags = [...new Set(posts.flatMap(post => post.data.tags))];
-
-  return tags.map(tag => ({
-    params: { tag },
+  return tags.map((tag) => ({
+    params: { page: tagsSlug, tag },
     props: {
       tag,
+      tagsSlug,
       posts: posts
-        .filter(post => post.data.tags.includes(tag))
+        .filter((post) => post.data.tags.includes(tag))
         .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
     },
   }));
 }
 
-const { tag, posts } = Astro.props;
+const { tag, tagsSlug, posts } = Astro.props;
 ---
 
 <BaseLayout
@@ -31,9 +36,9 @@ const { tag, posts } = Astro.props;
     <div class="container">
       <div class="section__header">
         <div class="tag-breadcrumb">
-          <a href="/tags" class="breadcrumb-link">Tags</a>
+          <a href={`/${tagsSlug}`} class="breadcrumb-link">Tags</a>
           <span aria-hidden="true"> / </span>
-          <TagBadge tag={tag} index={0} href={`/tags/${tag}`} />
+          <TagBadge tag={tag} index={0} href={`/${tagsSlug}/${tag}`} />
         </div>
         <h1 class="section__title">#{tag}</h1>
         <p class="section__subtitle">
@@ -55,7 +60,7 @@ const { tag, posts } = Astro.props;
       </div>
 
       <div class="back-link">
-        <a href="/tags" class="btn btn--outline">← Ver todos los tags</a>
+        <a href={`/${tagsSlug}`} class="btn btn--outline">← Ver todos los tags</a>
       </div>
     </div>
   </section>

@@ -6,6 +6,7 @@ const mediaController = require('../controllers/media');
 const usersController = require('../controllers/users');
 const settingsController = require('../controllers/settings');
 const pagesController = require('../controllers/pages');
+const siteContentController = require('../controllers/siteContent');
 const { authGuard, requireRole } = require('../middlewares/authGuard');
 const upload = require('../middlewares/upload');
 // Auth
@@ -46,6 +47,9 @@ router.post('/settings/site-config', authGuard, requireRole('admin'), settingsCo
 router.get('/pages', authGuard, pagesController.getAll);
 router.get('/pages/:filename', authGuard, pagesController.getOne);
 router.put('/pages/:filename', authGuard, pagesController.update);
+// Contenido del sitio (Home + Menú principal)
+router.get('/site-content', authGuard, siteContentController.getSiteContent);
+router.put('/site-content', authGuard, siteContentController.updateSiteContent);
 // Config pública (usada por el frontend del admin antes/sin autenticar)
 router.get('/config', (req, res) => {
   res.json({ siteUrl: process.env.SITE_URL || 'https://nosdicengeeks.com' });

@@ -4,6 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TagBadge from '../components/TagBadge.astro';
 import siteConfig from '../data/site-config.json';
+import { getTagsPageSlug } from '../lib/tagsSlug';
 
 interface Props {
   title: string;
@@ -40,6 +41,7 @@ const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
 });
 
 const gtmId = siteConfig.gtmId || '';
+const tagsSlug = await getTagsPageSlug();
 ---
 
 <!doctype html>
@@ -100,7 +102,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             {tags.length > 0 && (
               <div class="post-tags">
                 {tags.map((tag, i) => (
-                  <TagBadge tag={tag} index={i} href={`/tags/${tag}`} />
+                  <TagBadge tag={tag} index={i} href={`/${tagsSlug}/${tag}`} />
                 ))}
               </div>
             )}
@@ -143,7 +145,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <div class="post-footer__tags">
               <span class="meta-label">// tags</span>
               {tags.map((tag, i) => (
-                <TagBadge tag={tag} index={i} href={`/tags/${tag}`} />
+                <TagBadge tag={tag} index={i} href={`/${tagsSlug}/${tag}`} />
               ))}
             </div>
             <a href="/" class="btn btn--outline post-footer__back">← Volver al inicio</a>
