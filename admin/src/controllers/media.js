@@ -11,6 +11,18 @@ const BLOG_DIR = path.join(
   'src/content/blog'
 );
 
+// Anchos responsivos generados junto al archivo base (1200w, el "master"
+// que ya se guardaba antes y sigue siendo el que queda en el frontmatter
+// de los posts). BlogPostCard.astro arma el srcset con estos mismos tres
+// anchos — si se cambia esta lista hay que cambiarla ahí también.
+const RESPONSIVE_WIDTHS = [400, 800];
+
+function variantFilename(filename, width) {
+  const ext = path.extname(filename);
+  const base = filename.slice(0, -ext.length);
+  return `${base}-${width}w${ext}`;
+}
+
 function getPostsUsingImage(filename) {
   if (!fs.existsSync(BLOG_DIR)) return [];
   const files = fs.readdirSync(BLOG_DIR).filter((f) => f.endsWith('.md'));
@@ -42,9 +54,24 @@ exports.upload = (req, res) => {
   sharp(req.file.buffer)
     .resize({ width: 1200, withoutEnlargement: true })
     .webp({ quality: 85 })
-    .toFile(outputPath, (err, info) => {
+    .toFile(outputPath, async (err, info) => {
       if (err) {
         return res.status(500).json({ error: `Error al procesar imagen: ${err.message}` });
+      }
+      try {
+        await Promise.all(
+          RESPONSIVE_WIDTHS.map((width) =>
+            sharp(req.file.buffer)
+              .resize({ width, withoutEnlargement: true })
+              .webp({ quality: 85 })
+              .toFile(path.join(IMAGES_DIR, variantFilename(filename, width)))
+          )
+        );
+      } catch (variantErr) {
+        // El archivo base (1200w) ya se guardó bien: si fallan las
+        // variantes chicas no se aborta el upload, solo queda sin
+        // srcset optimizado hasta que se resuba o se regeneren a mano.
+        console.error('[media] Error generando variantes responsivas:', variantErr.message);
       }
       res.json({
         success: true,
@@ -62,8 +89,9 @@ exports.list = (req, res) => {
     if (!fs.existsSync(IMAGES_DIR)) {
       return res.json({ files: [] });
     }
+    const isResponsiveVariant = new RegExp(`-(${RESPONSIVE_WIDTHS.join('|')})w\\.[a-z]+$`, 'i');
     const files = fs.readdirSync(IMAGES_DIR)
-      .filter(f => /\.(webp|jpg|jpeg|png|gif)$/i.test(f))
+      .filter(f => /\.(webp|jpg|jpeg|png|gif)$/i.test(f) && !isResponsiveVariant.test(f))
       .map(f => {
         const stat = fs.statSync(path.join(IMAGES_DIR, f));
         const kb = (stat.size / 1024).toFixed(1);
@@ -82,6 +110,13 @@ exports.list = (req, res) => {
   }
 };
 
+function removeVariants(filename) {
+  for (const width of RESPONSIVE_WIDTHS) {
+    const variantPath = path.join(IMAGES_DIR, variantFilename(filename, width));
+    if (fs.existsSync(variantPath)) fs.unlinkSync(variantPath);
+  }
+}
+
 exports.remove = (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
@@ -90,6 +125,7 @@ exports.remove = (req, res) => {
       return res.status(404).json({ error: 'Imagen no encontrada' });
     }
     fs.unlinkSync(filepath);
+    removeVariants(filename);
     res.json({ success: true, message: 'Imagen eliminada' });
   } catch (err) {
     res.status(500).json({ error: `Error al eliminar imagen: ${err.message}` });
@@ -118,9 +154,11 @@ exports.bulkDelete = (req, res) => {
     }
     let deleted = 0;
     for (const name of filenames) {
-      const filepath = path.join(IMAGES_DIR, path.basename(name));
+      const basename = path.basename(name);
+      const filepath = path.join(IMAGES_DIR, basename);
       if (fs.existsSync(filepath)) {
         fs.unlinkSync(filepath);
+        removeVariants(basename);
         deleted++;
       }
     }

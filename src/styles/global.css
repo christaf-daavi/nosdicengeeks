@@ -3,8 +3,10 @@
    Global CSS | Dark mode by default | Brand palette
    ============================================================ */
 
-/* ─── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Google Fonts se carga como <link> en BaseHead.astro (no @import acá):
+   un @import de CSS bloquea el render hasta que el motor de estilos llega
+   a esa línea, mientras que un <link> en <head> deja que el navegador lo
+   descubra y lo pida en paralelo con el resto del HTML. */
 
 /* ─── Design Tokens — Dark Mode (default) ───────────────────── */
 :root {

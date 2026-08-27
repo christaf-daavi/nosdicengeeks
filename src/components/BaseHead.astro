@@ -19,9 +19,11 @@ const siteName = 'NosDicenGeeks';
 const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
 ---
 
-<!-- Google Fonts preconnect -->
+<!-- Google Fonts: preconnect + <link> (no @import en CSS, que bloquea
+     render hasta que el motor de estilos llega a esa línea) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" />
 
 <!-- Charset & Viewport -->
 <meta charset="utf-8" />

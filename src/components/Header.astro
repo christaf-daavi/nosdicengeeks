@@ -55,8 +55,21 @@ const currentPath = Astro.url.pathname;
   const header = document.getElementById('site-header')!;
 
   // ── Glassmorphism on scroll ──────────────────────────────────
-  const onScroll = () => {
+  // Batcheado con requestAnimationFrame: sin esto, scroll events rápidos
+  // intercalan lecturas (scrollY) y escrituras (classList.toggle) de
+  // invocaciones consecutivas dentro del mismo frame, forzando layouts
+  // sincrónicos (forced reflow) en vez de dejar que el navegador los
+  // agrupe antes del siguiente paint.
+  let ticking = false;
+  const updateHeader = () => {
     header.classList.toggle('scrolled', window.scrollY > 10);
+    ticking = false;
+  };
+  const onScroll = () => {
+    if (!ticking) {
+      requestAnimationFrame(updateHeader);
+      ticking = true;
+    }
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();

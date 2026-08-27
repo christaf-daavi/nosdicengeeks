@@ -55,6 +55,31 @@ build sigue funcionando igual — solo se omite la purga de caché
 (`builder.js` lo maneja como no-fatal). `JWT_SECRET` sí es obligatorio:
 sin él, el login del admin en prod falla.
 
+### Nginx — caché de imágenes (aplicar manualmente en el servidor)
+
+La config de Nginx vive en el servidor, no en este repo. Para subir el TTL
+de caché de las imágenes propias de 4h a 30d (pendiente de PageSpeed
+Insights), en `/etc/nginx/sites-available/nosdicengeeks.com` agregar o
+editar el bloque:
+
+```nginx
+location ~* \.(webp|jpg|jpeg|png|gif|svg|ico)$ {
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+}
+```
+
+y aplicar:
+
+```sh
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+`nginx -t` valida la sintaxis antes de recargar — si falla, no tocar nada
+más hasta corregir el bloque. No confundir con la purga de caché de
+Cloudflare (esa es automática, ver `builder.js` arriba): esto es el TTL
+que Nginx le dice al *navegador* que respete, no el caché de Cloudflare.
+
 ## Desarrollo local
 
 ### Requisitos

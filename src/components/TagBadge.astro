@@ -12,7 +12,7 @@ interface Props {
 const { tag, index = 0, href, count } = Astro.props;
 
 const variants = ['tag--blue', 'tag--yellow', 'tag--danger', 'tag--purple'];
-const cls = `tag tag--${variants[index % variants.length]}`;
+const cls = `tag ${variants[index % variants.length]}`;
 ---
 
 {href ? (
