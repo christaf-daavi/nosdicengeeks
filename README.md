@@ -27,6 +27,34 @@ propio (Node.js/Express) para administrar posts, páginas, home y menú desde
 El flujo recomendado es probar cualquier cambio en local antes de mergear
 `dev` → `main`, ya que ese merge dispara un deploy real a producción.
 
+## Deploy a producción
+
+`deploy-prod.yml` se conecta al EC2 de prod vía AWS SSM (no SSH directo) y,
+antes de instalar dependencias y buildear, escribe/actualiza
+`admin/.env` en el servidor con los secrets de abajo — así ninguna
+variable sensible queda hardcodeada en `admin/ecosystem.config.js` (que
+solo define `PORT`/`NODE_ENV` y el proceso de PM2) ni en el propio
+workflow. Los 3 secrets viajan en base64 dentro del comando SSM y
+`admin/scripts/write-env.js` los decodifica en el servidor.
+
+Secrets a configurar en **GitHub → Settings → Secrets and variables →
+Actions** (environment `production`):
+
+| Secret | Uso |
+| :----- | :-- |
+| `AWS_ACCESS_KEY_ID` | Ya configurado — credenciales AWS para SSM |
+| `AWS_SECRET_ACCESS_KEY` | Ya configurado — credenciales AWS para SSM |
+| `AWS_REGION` | Ya configurado — región del EC2 |
+| `EC2_INSTANCE_ID` | Ya configurado — instancia de prod |
+| `JWT_SECRET` | **Nuevo** — firma los tokens de sesión del admin en prod |
+| `CLOUDFLARE_ZONE_ID` | **Nuevo** — purga de caché de Cloudflare tras cada build |
+| `CLOUDFLARE_API_TOKEN` | **Nuevo** — idem, token con permiso de purga sobre esa zona |
+
+Si `CLOUDFLARE_ZONE_ID`/`CLOUDFLARE_API_TOKEN` no están configurados, el
+build sigue funcionando igual — solo se omite la purga de caché
+(`builder.js` lo maneja como no-fatal). `JWT_SECRET` sí es obligatorio:
+sin él, el login del admin en prod falla.
+
 ## Desarrollo local
 
 ### Requisitos

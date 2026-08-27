@@ -18,13 +18,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Deploy to Prod EC2 via SSM
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          # Los secrets viajan en base64 dentro del comando remoto: así
+          # ningún carácter especial que puedan contener (comillas, $,
+          # backticks) rompe el parseo del shell remoto. write-env.js los
+          # decodifica del otro lado — nunca quedan en texto plano en el
+          # comando ni se hardcodean en ecosystem.config.js.
+          JWT_SECRET_B64=$(printf '%s' "$JWT_SECRET" | base64 -w0)
+          CLOUDFLARE_ZONE_ID_B64=$(printf '%s' "$CLOUDFLARE_ZONE_ID" | base64 -w0)
+          CLOUDFLARE_API_TOKEN_B64=$(printf '%s' "$CLOUDFLARE_API_TOKEN" | base64 -w0)
+
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "cd /var/www/nosdicengeeks-prod && sudo -u ubuntu git stash && sudo -u ubuntu git pull origin main",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && node /var/www/nosdicengeeks-prod/admin/scripts/ensure-site-content.js\"",
+              "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && node /var/www/nosdicengeeks-prod/admin/scripts/write-env.js '"$JWT_SECRET_B64"' '"$CLOUDFLARE_ZONE_ID_B64"' '"$CLOUDFLARE_API_TOKEN_B64"'\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod && npm install --production=false\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod && npm run build\"",
               "sudo -u ubuntu bash -c \"source /home/ubuntu/.nvm/nvm.sh && nvm use 22 && cd /var/www/nosdicengeeks-prod/admin && npm install --production=false\"",
