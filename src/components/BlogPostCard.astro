@@ -19,6 +19,17 @@ const formattedDate = pubDate.toLocaleDateString('es-ES', {
 });
 
 const isoDate = pubDate.toISOString();
+
+// admin/src/controllers/media.js genera variantes -400w/-800w junto al
+// archivo base (1200w, el que queda en image.src) al subir cada imagen.
+// Astro <Image /> no puede procesar archivos servidos desde public/, así
+// que el srcset se arma a mano con esa misma convención de nombres — si
+// cambia allá, hay que cambiarla acá también.
+function srcsetFor(src: string): string {
+  const ext = src.slice(src.lastIndexOf('.'));
+  const base = src.slice(0, -ext.length);
+  return `${base}-400w${ext} 400w, ${base}-800w${ext} 800w, ${src} 1200w`;
+}
 ---
 
 <article class="post-card">
@@ -28,6 +39,7 @@ const isoDate = pubDate.toISOString();
       <div class="post-card__image-wrapper">
         <img
           src={image.src}
+          srcset={srcsetFor(image.src)}
           alt={image.alt}
           class="post-card__image"
           loading="lazy"
