@@ -30,6 +30,16 @@ function srcsetFor(src: string): string {
   const base = src.slice(0, -ext.length);
   return `${base}-400w${ext} 400w, ${base}-800w${ext} 800w, ${src} 1200w`;
 }
+
+// src es el fallback para navegadores que ignoran srcset/sizes, pero
+// Lighthouse también lo mide como si fuera la imagen entregada — usar acá
+// el master de 1200w penalizaba el audit aunque el srcset ya sirviera el
+// tamaño correcto. Se apunta a la variante más chica (400w).
+function fallbackSrcFor(src: string): string {
+  const ext = src.slice(src.lastIndexOf('.'));
+  const base = src.slice(0, -ext.length);
+  return `${base}-400w${ext}`;
+}
 ---
 
 <article class="post-card">
@@ -38,7 +48,7 @@ function srcsetFor(src: string): string {
     {image && (
       <div class="post-card__image-wrapper">
         <img
-          src={image.src}
+          src={fallbackSrcFor(image.src)}
           srcset={srcsetFor(image.src)}
           alt={image.alt}
           class="post-card__image"
