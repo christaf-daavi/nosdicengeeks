@@ -19,11 +19,15 @@ const siteName = 'NosDicenGeeks';
 const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
 ---
 
-<!-- Google Fonts: preconnect + <link> (no @import en CSS, que bloquea
-     render hasta que el motor de estilos llega a esa línea) -->
+<!-- Google Fonts: preconnect + carga no bloqueante (preload + onload que
+     conmuta rel a "stylesheet"). Un <link rel="stylesheet"> normal sigue
+     bloqueando el render hasta que ese CSS resuelve, aunque no sea un
+     @import; este patrón deja que la fuente cargue en paralelo sin
+     bloquear, con el <noscript> como fallback si JS está deshabilitado. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=Inter:wght@400;500&display=swap" /></noscript>
 
 <!-- Charset & Viewport -->
 <meta charset="utf-8" />
