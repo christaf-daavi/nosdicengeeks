@@ -94,15 +94,18 @@ function srcsetFor(src: string): string {
     font-size: var(--text-sm);
     font-weight: 600;
     color: #ffffff;
-    background: var(--color-primary);
+    /* var(--color-primary) (#0496ff) con texto blanco da ~3.08:1 — no
+       cumple el mínimo 4.5:1 de WCAG AA. var(--color-dark-blue) (#006ba6),
+       ya definida en el design system, da ~5.75:1. */
+    background: var(--color-dark-blue);
     padding: 6px 16px;
     border-radius: 4px;
     white-space: nowrap;
-    transition: background var(--transition);
+    transition: filter var(--transition);
   }
 
   .post-card:hover .post-card__read-more {
-    background: #006ba6;
+    filter: brightness(0.85);
   }
 
   /* Ensure h3 inside card never shows the ::before prompt */
