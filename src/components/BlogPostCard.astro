@@ -1,6 +1,7 @@
 ---
 import TagBadge from './TagBadge.astro';
 import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
+import { formatDate, isoDate } from '../lib/formatDate';
 
 interface Props {
   title: string;
@@ -13,13 +14,7 @@ interface Props {
 
 const { title, description, pubDate, tags, slug, image } = Astro.props;
 
-const formattedDate = pubDate.toLocaleDateString('es-ES', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
-
-const isoDate = pubDate.toISOString();
+const formattedDate = formatDate(pubDate, 'short');
 
 ---
 
@@ -56,7 +51,7 @@ const isoDate = pubDate.toISOString();
       <p class="post-card__excerpt">{description}</p>
 
       <div class="post-card__meta">
-        <time class="post-card__date" datetime={isoDate}>Publicado el {formattedDate}</time>
+        <time class="post-card__date" datetime={isoDate(pubDate)}>Publicado el {formattedDate}</time>
         <span class="post-card__read-more" aria-hidden="true">leer →</span>
       </div>
     </div>

@@ -7,6 +7,7 @@ import siteConfig from '../data/site-config.json';
 import { getTagsPageSlug } from '../lib/tagsSlug';
 import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
 import { readableColor, OVERLAY_WORST_BG } from '../lib/contrast';
+import { formatDate, isoDate } from '../lib/formatDate';
 
 interface Props {
   title: string;
@@ -30,17 +31,8 @@ const {
   heroLabelColor, heroTitleColor, heroCopyColor,
 } = Astro.props;
 
-const formattedPubDate = pubDate.toLocaleDateString('es-ES', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
-
-const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const formattedPubDate = formatDate(pubDate);
+const formattedUpdatedDate = updatedDate && formatDate(updatedDate);
 
 const gtmId = siteConfig.gtmId || '';
 
@@ -145,7 +137,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
               <span class="post-meta__sep" aria-hidden="true">·</span>
 
-              <time class="post-meta__date" datetime={pubDate.toISOString()}>
+              <time class="post-meta__date" datetime={isoDate(pubDate)}>
                 <span class="meta-label">// publicado</span>
                 {formattedPubDate}
               </time>
@@ -153,7 +145,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               {updatedDate && (
                 <>
                   <span class="post-meta__sep" aria-hidden="true">·</span>
-                  <time class="post-meta__date" datetime={updatedDate.toISOString()}>
+                  <time class="post-meta__date" datetime={isoDate(updatedDate)}>
                     <span class="meta-label">// actualizado</span>
                     {formattedUpdatedDate}
                   </time>
