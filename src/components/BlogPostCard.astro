@@ -1,5 +1,6 @@
 ---
 import TagBadge from './TagBadge.astro';
+import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
 
 interface Props {
   title: string;
@@ -20,26 +21,6 @@ const formattedDate = pubDate.toLocaleDateString('es-ES', {
 
 const isoDate = pubDate.toISOString();
 
-// admin/src/controllers/media.js genera variantes -400w/-800w junto al
-// archivo base (1200w, el que queda en image.src) al subir cada imagen.
-// Astro <Image /> no puede procesar archivos servidos desde public/, así
-// que el srcset se arma a mano con esa misma convención de nombres — si
-// cambia allá, hay que cambiarla acá también.
-function srcsetFor(src: string): string {
-  const ext = src.slice(src.lastIndexOf('.'));
-  const base = src.slice(0, -ext.length);
-  return `${base}-400w${ext} 400w, ${base}-800w${ext} 800w, ${src} 1200w`;
-}
-
-// src es el fallback para navegadores que ignoran srcset/sizes, pero
-// Lighthouse también lo mide como si fuera la imagen entregada — usar acá
-// el master de 1200w penalizaba el audit aunque el srcset ya sirviera el
-// tamaño correcto. Se apunta a la variante más chica (400w).
-function fallbackSrcFor(src: string): string {
-  const ext = src.slice(src.lastIndexOf('.'));
-  const base = src.slice(0, -ext.length);
-  return `${base}-400w${ext}`;
-}
 ---
 
 <article class="post-card">
@@ -48,7 +29,7 @@ function fallbackSrcFor(src: string): string {
     {image && (
       <div class="post-card__image-wrapper">
         <img
-          src={fallbackSrcFor(image.src)}
+          src={fallbackSrcFor(image.src, 400)}
           srcset={srcsetFor(image.src)}
           alt={image.alt}
           class="post-card__image"
