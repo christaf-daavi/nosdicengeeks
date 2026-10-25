@@ -319,9 +319,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     opacity: 0.8;
   }
 
+  /* Sin opacidad propia: sumada a la de .post-meta (.8) dejaba el verde en
+     ~3.6:1, por debajo de AA para texto de 12px. */
   .meta-label {
     color: var(--color-green);
-    opacity: 0.7;
     margin-right: var(--space-1);
   }
 
