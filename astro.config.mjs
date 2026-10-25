@@ -8,6 +8,10 @@ export default defineConfig({
   site: 'https://nosdicengeeks.com',
   output: 'static',
 
+  redirects: {
+    '/about': '/nosotros',
+  },
+
   build: {
     format: 'directory',
   },
