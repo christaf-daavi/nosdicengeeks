@@ -36,6 +36,9 @@ app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'Archivo demasiado grande. Máximo 10MB' });
   }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'El contenido enviado es demasiado grande' });
+  }
   if (err.message && err.message.startsWith('Tipo de archivo no permitido')) {
     return res.status(415).json({ error: err.message });
   }

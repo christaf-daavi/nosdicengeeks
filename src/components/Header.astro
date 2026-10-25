@@ -5,7 +5,7 @@ import path from 'node:path';
 const DEFAULT_MENU = [
   { href: '/',       label: 'Inicio'    },
   { href: '/tags',   label: 'Etiquetas' },
-  { href: '/about',  label: 'Nosotros'  },
+  { href: '/nosotros', label: 'Nosotros' },
 ];
 
 // admin/data/site.json es contenido editable desde el CMS (gitignored: cada
@@ -34,8 +34,24 @@ const currentPath = Astro.url.pathname;
       <img src="/images/logo.svg" alt="NosDicenGeeks" class="logo-img" width="72" height="72" />
     </a>
 
-    <nav aria-label="Navegación principal">
-      <ul class="site-nav">
+    <nav class="site-nav-wrap" aria-label="Navegación principal">
+      {/* Oculto sin JS: en móvil la lista se muestra entonces como fila
+          bajo el logo. Con JS el script lo muestra y la lista pasa a ser
+          un panel desplegable (ver .has-menu-js en global.css). */}
+      <button
+        type="button"
+        class="nav-toggle"
+        id="nav-toggle"
+        aria-label="Abrir menú"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        hidden
+      >
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+      </button>
+      <ul class="site-nav" id="site-nav">
         {navLinks.map(({ href, label }) => (
           <li>
             <a
@@ -73,6 +89,39 @@ const currentPath = Astro.url.pathname;
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  // ── Menú móvil (<768px) ──────────────────────────────────────
+  // Disclosure no modal: Esc, clic fuera o elegir un enlace lo cierran.
+  const toggle = document.getElementById('nav-toggle') as HTMLButtonElement;
+  const menu = document.getElementById('site-nav')!;
+  const mobile = window.matchMedia('(max-width: 767.98px)');
+
+  const setOpen = (open: boolean) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    header.classList.toggle('menu-open', open);
+  };
+  const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+
+  header.classList.add('has-menu-js');
+  toggle.hidden = false;
+
+  toggle.addEventListener('click', () => setOpen(!isOpen()));
+  menu.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('a')) setOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (isOpen() && !header.contains(e.target as Node)) setOpen(false);
+  });
+  // Al pasar a escritorio o volver con el botón "atrás" (bfcache)
+  mobile.addEventListener('change', () => setOpen(false));
+  window.addEventListener('pageshow', () => setOpen(false));
 </script>
 
 <style>
@@ -86,10 +135,6 @@ const currentPath = Astro.url.pathname;
   @media (max-width: 768px) {
     .logo-img {
       height: 64px;
-    }
-
-    .site-nav {
-      display: none;
     }
   }
 </style>

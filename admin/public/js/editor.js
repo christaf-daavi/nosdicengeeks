@@ -1,3 +1,5 @@
+import { parseVideoUrl, EMBED_IFRAME_ATTRS } from '/js/video-embed.js';
+
 // ── Auth ─────────────────────────────────────────────────────────
 const token = checkAuth();
 if (!token) throw new Error('No auth');
@@ -14,6 +16,7 @@ try {
 const params   = new URLSearchParams(window.location.search);
 let   editFile = params.get('file') || null;
 let   coverUrl = null;
+let   coverAlt = null; // alt explícito (p.ej. del frontmatter importado); si no, se usa el título
 let   tags     = [];
 let   editor   = null;
 let   seoDebounce = null;
@@ -29,6 +32,7 @@ window.removeCover = (...args) => removeCover(...args);
 window.openOgImageModal = (...args) => openOgImageModal(...args);
 window.closeOgImageModal = (...args) => closeOgImageModal(...args);
 window.closeContentImageModal = (...args) => closeContentImageModal(...args);
+window.closeVideoModal = (...args) => closeVideoModal(...args);
 
 // ── Sidebar móvil ────────────────────────────────────────────────
 document.getElementById('menuToggle').addEventListener('click', () =>
@@ -66,6 +70,7 @@ try {
   });
   wireToolbar(editor, document.getElementById('tiptapToolbar'), {
     onImageRequest: (insertFn) => openContentImageModal(insertFn),
+    onVideoRequest: (insertFn) => openVideoModal(insertFn),
   });
 } catch (err) {
   console.error('Error al inicializar TipTap:', err);
@@ -73,17 +78,21 @@ try {
 }
 
 // ── Helpers UI ───────────────────────────────────────────────────
+// autohide: true (4 s), false o una duración en ms
 function showTopAlert(type, msg, autohide = true) {
   const el = document.getElementById('topAlert');
   el.className = `alert alert-${type} show`;
   el.textContent = msg;
-  if (autohide) setTimeout(() => el.classList.remove('show'), 4000);
+  if (autohide) setTimeout(() => el.classList.remove('show'), autohide === true ? 4000 : autohide);
 }
 
-function setSaveStatus(msg, color = 'var(--text-muted)') {
-  const el = document.getElementById('saveStatus');
+function setStatus(el, msg, color = 'var(--text-muted)') {
   el.textContent = msg;
   el.style.color = color;
+}
+
+function setSaveStatus(msg, color) {
+  setStatus(document.getElementById('saveStatus'), msg, color);
 }
 
 function escHtml(str) {
@@ -197,11 +206,12 @@ function runSEO() {
 document.getElementById('seoKeyword').addEventListener('input', debounceSEO);
 
 // ── Image upload (portada) ────────────────────────────────────────
-function setCoverPreview(url) {
+function setCoverPreview(url, alt = null) {
   const img    = document.getElementById('coverPreview');
   const rmBtn  = document.getElementById('removeCoverBtn');
   const zone   = document.getElementById('dropZone');
   coverUrl     = url;
+  coverAlt     = alt;
   img.src      = url;
   img.style.display    = 'block';
   rmBtn.style.display  = 'flex';
@@ -210,6 +220,7 @@ function setCoverPreview(url) {
 
 function removeCover() {
   coverUrl = null;
+  coverAlt = null;
   const img   = document.getElementById('coverPreview');
   const rmBtn = document.getElementById('removeCoverBtn');
   const zone  = document.getElementById('dropZone');
@@ -221,50 +232,87 @@ function removeCover() {
   document.getElementById('coverUploadStatus').textContent = '';
 }
 
-async function uploadImage(file) {
-  const status = document.getElementById('coverUploadStatus');
-  status.textContent = 'Subiendo…';
-  status.style.color = 'var(--text-muted)';
-
+// Sube un archivo a /api/media/upload. Devuelve { url, filename, width, height, … }
+// o lanza un Error con un mensaje listo para mostrar.
+async function uploadMediaFile(file) {
   const formData = new FormData();
   formData.append('image', file);
+  const res = await apiFetch('/api/media/upload', { method: 'POST', body: formData });
+  if (!res) throw new Error('Sesión expirada');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || `Error al subir la imagen (HTTP ${res.status})`);
+  }
+  return data;
+}
 
+async function uploadImage(file) {
+  const status = document.getElementById('coverUploadStatus');
+  setStatus(status, 'Subiendo…');
   try {
-    const res = await fetch('/api/media/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body: formData,
-    });
-    if (res.status === 401 || res.status === 403) { logout(); return; }
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      status.textContent = data.error || 'Error al subir';
-      status.style.color = 'var(--brand-pink)';
-      return;
-    }
+    const data = await uploadMediaFile(file);
     setCoverPreview(data.url);
-    status.textContent = `${data.filename} · ${data.width}×${data.height}px`;
-    status.style.color = '#10b981';
+    setStatus(status, `${data.filename} · ${data.width}×${data.height}px`, '#10b981');
   } catch (err) {
-    status.textContent = `Error: ${err.message}`;
-    status.style.color = 'var(--brand-pink)';
+    setStatus(status, `Error: ${err.message}`, 'var(--brand-pink)');
   }
 }
 
-document.getElementById('coverInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) uploadImage(file);
+// Zona drag & drop + input file oculto: clic, Enter/Espacio o soltar un archivo
+function wireDropZone(zone, input, onFile) {
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  zone.addEventListener('dragover',  (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  });
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    input.value = ''; // permite volver a elegir el mismo archivo
+    if (file) onFile(file);
+  });
+}
+
+wireDropZone(document.getElementById('dropZone'), document.getElementById('coverInput'), (file) => {
+  if (file.type.startsWith('image/')) uploadImage(file);
 });
 
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) uploadImage(file);
+// ── Modales: foco al abrir, Esc cierra, foco vuelve al disparador ──
+let modalReturnFocus = null;
+function openModal(id, focusEl) {
+  const overlay = document.getElementById(id);
+  modalReturnFocus = document.activeElement;
+  overlay.classList.add('open');
+  (focusEl || overlay.querySelector('button, input, [tabindex="0"]'))?.focus();
+}
+function closeModal(id, restoreFocus = true) {
+  document.getElementById(id).classList.remove('open');
+  if (restoreFocus && modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus();
+  modalReturnFocus = null;
+}
+
+const modalClosers = {
+  coverMediaModal:   () => closeCoverMediaModal(),
+  ogImageModal:      () => closeOgImageModal(),
+  contentImageModal: () => closeContentImageModal(),
+  videoModal:        () => closeVideoModal(),
+  importConfirmModal: () => closeImportConfirm('cancel'),
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = [...document.querySelectorAll('.modal-overlay.open')].pop();
+  if (open && modalClosers[open.id]) {
+    e.preventDefault();
+    modalClosers[open.id]();
+  } else if (document.getElementById('previewModal').style.display === 'block') {
+    closePreview();
+  }
 });
 
 // ── Selector de imagen genérico (grid de /api/media) ──────────────
@@ -281,11 +329,14 @@ async function loadMediaGrid(gridId, onPick) {
       return;
     }
     grid.innerHTML = files.map((f) => `
-      <div class="media-pick-item" data-url="${escHtml(f.url)}" style="cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;" title="${escHtml(f.name)}">
+      <div class="media-pick-item" data-url="${escHtml(f.url)}" role="button" tabindex="0" style="cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;" title="${escHtml(f.name)}">
         <img src="${f.url}" alt="${escHtml(f.name)}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
       </div>`).join('');
     grid.querySelectorAll('.media-pick-item').forEach((el) => {
       el.addEventListener('click', () => onPick(el.dataset.url));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(el.dataset.url); }
+      });
     });
   } catch (err) {
     grid.innerHTML = `<p style="color:var(--brand-pink);font-size:.85rem;">Error: ${escHtml(err.message)}</p>`;
@@ -294,14 +345,14 @@ async function loadMediaGrid(gridId, onPick) {
 
 // og:image
 function openOgImageModal() {
-  document.getElementById('ogImageModal').classList.add('open');
+  openModal('ogImageModal');
   loadMediaGrid('ogImageGrid', (url) => {
     document.getElementById('ogImage').value = url;
     closeOgImageModal();
   });
 }
 function closeOgImageModal() {
-  document.getElementById('ogImageModal').classList.remove('open');
+  closeModal('ogImageModal');
 }
 document.getElementById('ogImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeOgImageModal();
@@ -309,7 +360,7 @@ document.getElementById('ogImageModal').addEventListener('click', (e) => {
 
 // Imagen de portada (buscar en Media)
 function openCoverMediaModal() {
-  document.getElementById('coverMediaModal').classList.add('open');
+  openModal('coverMediaModal');
   loadMediaGrid('coverMediaGrid', (url) => {
     setCoverPreview(url);
     document.getElementById('coverUploadStatus').textContent = '';
@@ -317,7 +368,7 @@ function openCoverMediaModal() {
   });
 }
 function closeCoverMediaModal() {
-  document.getElementById('coverMediaModal').classList.remove('open');
+  closeModal('coverMediaModal');
 }
 document.getElementById('coverMediaModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCoverMediaModal();
@@ -328,21 +379,307 @@ document.getElementById('coverFileInput').addEventListener('change', (e) => {
   if (file) uploadImage(file);
 });
 
-// Imagen dentro del contenido (TipTap)
+// Imagen dentro del contenido (TipTap): pestañas Biblioteca / Subir nueva
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+let contentImageFile = null;
+
 function openContentImageModal(insertFn) {
   pendingContentImageInsert = insertFn;
-  document.getElementById('contentImageModal').classList.add('open');
-  loadMediaGrid('contentImageGrid', (url) => {
-    if (pendingContentImageInsert) pendingContentImageInsert(url);
-    closeContentImageModal();
-  });
+  resetContentImageUpload();
+  openModal('contentImageModal');
+  selectImageTab('library');
+  loadMediaGrid('contentImageGrid', (url) => insertContentImage(url, ''));
 }
-function closeContentImageModal() {
-  document.getElementById('contentImageModal').classList.remove('open');
+function closeContentImageModal(restoreFocus = true) {
+  closeModal('contentImageModal', restoreFocus);
   pendingContentImageInsert = null;
+  resetContentImageUpload();
+}
+function insertContentImage(url, alt) {
+  const insert = pendingContentImageInsert;
+  closeContentImageModal(false); // el foco pasa al editor al insertar
+  if (insert) insert(url, alt);
 }
 document.getElementById('contentImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeContentImageModal();
+});
+
+const imageTabs = {
+  library: { tab: document.getElementById('imgTabLibrary'), panel: document.getElementById('imgPanelLibrary') },
+  upload:  { tab: document.getElementById('imgTabUpload'),  panel: document.getElementById('imgPanelUpload') },
+};
+function selectImageTab(name, focus = false) {
+  Object.entries(imageTabs).forEach(([key, { tab, panel }]) => {
+    const active = key === name;
+    tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
+    panel.hidden = !active;
+    if (active && focus) tab.focus();
+  });
+  document.getElementById('contentImageUploadBtn').hidden = name !== 'upload';
+}
+Object.entries(imageTabs).forEach(([name, { tab }]) => {
+  tab.addEventListener('click', () => selectImageTab(name));
+  tab.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      selectImageTab(name === 'library' ? 'upload' : 'library', true);
+    }
+  });
+});
+
+function resetContentImageUpload() {
+  contentImageFile = null;
+  const preview = document.getElementById('contentImagePreview');
+  if (preview.src) URL.revokeObjectURL(preview.src);
+  preview.removeAttribute('src');
+  preview.hidden = true;
+  document.getElementById('contentImageAlt').value = '';
+  setStatus(document.getElementById('contentImageStatus'), '');
+  const btn = document.getElementById('contentImageUploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Subir e insertar';
+}
+
+function setContentImageFile(file) {
+  const status = document.getElementById('contentImageStatus');
+  if (!file.type.startsWith('image/')) {
+    resetContentImageUpload();
+    setStatus(status, 'El archivo seleccionado no es una imagen.', 'var(--brand-pink)');
+    return;
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    resetContentImageUpload();
+    setStatus(status, `La imagen pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es 10 MB.`, 'var(--brand-pink)');
+    return;
+  }
+  resetContentImageUpload();
+  contentImageFile = file;
+  const preview = document.getElementById('contentImagePreview');
+  preview.src = URL.createObjectURL(file);
+  preview.hidden = false;
+  setStatus(status, `${file.name} · ${(file.size / 1024).toFixed(0)} KB`);
+  document.getElementById('contentImageUploadBtn').disabled = false;
+  document.getElementById('contentImageAlt').focus();
+}
+
+async function submitContentImageUpload() {
+  if (!contentImageFile) return;
+  const btn    = document.getElementById('contentImageUploadBtn');
+  const status = document.getElementById('contentImageStatus');
+  const alt    = document.getElementById('contentImageAlt').value.trim();
+  btn.disabled = true;
+  btn.textContent = 'Subiendo…';
+  setStatus(status, 'Subiendo imagen…');
+  try {
+    const data = await uploadMediaFile(contentImageFile);
+    // La Biblioteca se recarga en cada apertura del modal, así que la
+    // imagen nueva aparece ahí la próxima vez sin pedirla aparte.
+    insertContentImage(data.url, alt);
+    showTopAlert('success', 'Imagen subida e insertada');
+  } catch (err) {
+    setStatus(status, `No se pudo subir: ${err.message}`, 'var(--brand-pink)');
+    btn.disabled = false;
+    btn.textContent = 'Subir e insertar';
+  }
+}
+
+wireDropZone(
+  document.getElementById('contentImageDrop'),
+  document.getElementById('contentImageFile'),
+  setContentImageFile
+);
+document.getElementById('contentImageUploadBtn').addEventListener('click', submitContentImageUpload);
+document.getElementById('contentImageAlt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); submitContentImageUpload(); }
+});
+
+// ── Video embebido (YouTube / Vimeo / TikTok) ────────────────────
+const VIDEO_PROVIDERS = { youtube: 'YouTube', vimeo: 'Vimeo', tiktok: 'TikTok' };
+let pendingVideoInsert = null;
+let pendingVideo = null;
+let videoPreviewDebounce = null;
+
+function openVideoModal(insertFn) {
+  pendingVideoInsert = insertFn;
+  const input = document.getElementById('videoUrlInput');
+  input.value = '';
+  updateVideoPreview();
+  openModal('videoModal', input);
+}
+function closeVideoModal(restoreFocus = true) {
+  closeModal('videoModal', restoreFocus);
+  clearTimeout(videoPreviewDebounce);
+  document.getElementById('videoPreview').replaceChildren(); // corta la reproducción
+  pendingVideo = null;
+  pendingVideoInsert = null;
+}
+document.getElementById('videoModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeVideoModal();
+});
+
+function updateVideoPreview() {
+  const value   = document.getElementById('videoUrlInput').value;
+  const status  = document.getElementById('videoStatus');
+  const preview = document.getElementById('videoPreview');
+  const video   = value.trim() ? parseVideoUrl(value) : null;
+
+  document.getElementById('videoInsertBtn').disabled = !(video && video.ok);
+  if (!video || !video.ok) {
+    pendingVideo = null;
+    preview.replaceChildren();
+    setStatus(status, video ? video.error : '', 'var(--brand-pink)');
+    return;
+  }
+  setStatus(status, `Video de ${VIDEO_PROVIDERS[video.provider]} detectado`, '#10b981');
+  if (pendingVideo && pendingVideo.embedUrl === video.embedUrl) return; // no recargar el iframe
+  pendingVideo = video;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = video.vertical ? 'video-embed video-embed--vertical' : 'video-embed';
+  const iframe = document.createElement('iframe');
+  Object.entries({ ...EMBED_IFRAME_ATTRS, title: 'Vista previa del video' })
+    .forEach(([k, v]) => iframe.setAttribute(k, v));
+  iframe.src = video.embedUrl;
+  wrapper.appendChild(iframe);
+  preview.replaceChildren(wrapper);
+}
+
+function insertVideo() {
+  clearTimeout(videoPreviewDebounce);
+  updateVideoPreview();
+  if (!pendingVideo) return;
+  const insert = pendingVideoInsert;
+  const video  = pendingVideo;
+  closeVideoModal(false); // el foco pasa al editor al insertar
+  if (insert) insert(video);
+}
+
+document.getElementById('videoUrlInput').addEventListener('input', () => {
+  clearTimeout(videoPreviewDebounce);
+  videoPreviewDebounce = setTimeout(updateVideoPreview, 350);
+});
+document.getElementById('videoUrlInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); insertVideo(); }
+});
+document.getElementById('videoInsertBtn').addEventListener('click', insertVideo);
+
+// ── Importar .md (solo al editor; no guarda nada) ───────────────
+const MAX_MD_BYTES = 2 * 1024 * 1024;
+const MD_FILE = /\.(md|markdown|txt)$/i;
+let resolveImportMode = null;
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+// Resuelve con 'replace', 'append' o 'cancel'
+function askImportMode(filename) {
+  document.getElementById('importConfirmFile').textContent = filename;
+  openModal('importConfirmModal', document.querySelector('[data-import-mode="replace"]'));
+  return new Promise((resolve) => { resolveImportMode = resolve; });
+}
+function closeImportConfirm(mode) {
+  closeModal('importConfirmModal', mode === 'cancel');
+  if (resolveImportMode) resolveImportMode(mode);
+  resolveImportMode = null;
+}
+document.querySelectorAll('[data-import-mode]').forEach((btn) => {
+  btn.addEventListener('click', () => closeImportConfirm(btn.dataset.importMode));
+});
+document.getElementById('importConfirmModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeImportConfirm('cancel');
+});
+
+async function importMarkdownFile(file) {
+  if (!editor) {
+    showTopAlert('error', 'El editor no está disponible; no se puede importar.');
+    return;
+  }
+  if (!MD_FILE.test(file.name)) {
+    showTopAlert('error', 'El archivo debe ser .md o .markdown');
+    return;
+  }
+  if (file.size > MAX_MD_BYTES) {
+    showTopAlert('error', `El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es 2 MB`);
+    return;
+  }
+
+  let parsed;
+  try {
+    const raw = await readFileAsText(file);
+    const res = await apiFetch('/api/posts/parse-md', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      body: raw,
+    });
+    if (!res) return;
+    parsed = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showTopAlert('error', parsed.error || `No se pudo procesar el archivo (HTTP ${res.status})`, 8000);
+      return;
+    }
+  } catch (err) {
+    showTopAlert('error', `No se pudo leer el archivo: ${err.message}`);
+    return;
+  }
+
+  const mode = editor.isEmpty ? 'replace' : await askImportMode(file.name);
+  if (mode === 'cancel') return;
+  applyImportedMarkdown(parsed, mode, file.name);
+}
+
+function applyImportedMarkdown({ frontmatter: fm = {}, html = '' }, mode, filename) {
+  const imported = [];
+  const setField = (id, value) => {
+    const el = document.getElementById(id);
+    el.value = value;
+    el.dispatchEvent(new Event('input')); // slug, contador y SEO
+  };
+
+  if (fm.title)       { setField('postTitle', fm.title);             imported.push('título'); }
+  if (fm.description) { setField('postDescription', fm.description); imported.push('descripción'); }
+  if (fm.tags && fm.tags.length) {
+    tags = [];
+    fm.tags.forEach((t) => addTag(String(t)));
+    renderTags();
+    imported.push(`${tags.length} tag${tags.length === 1 ? '' : 's'}`);
+  }
+  if (fm.image && fm.image.src) {
+    setCoverPreview(fm.image.src, fm.image.alt || null);
+    document.getElementById('coverUploadStatus').textContent = '';
+    imported.push('portada');
+  }
+  if (fm.pubDate) { document.getElementById('postDate').value = fm.pubDate; imported.push('fecha'); }
+
+  if (mode === 'append') {
+    editor.chain().focus('end').insertContentAt(editor.state.doc.content.size, html).run();
+  } else {
+    editor.commands.setContent(html);
+  }
+  runSEO();
+
+  const fields = imported.length ? `${imported.join(', ')} y ` : '';
+  const action = mode === 'append' ? 'agregado al final' : 'cargado';
+  let msg = `Importado «${filename}»: ${fields}contenido ${action}.`;
+  if (fm.draft !== undefined) {
+    msg += ` El archivo indica draft: ${fm.draft}; elige "Guardar borrador" o "Publicar" al guardar.`;
+  }
+  showTopAlert('success', `${msg} Aún no se ha guardado nada.`, 8000);
+}
+
+document.getElementById('importMdBtn').addEventListener('click', () =>
+  document.getElementById('importMdInput').click()
+);
+document.getElementById('importMdInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // permite reimportar el mismo archivo
+  if (file) importMarkdownFile(file);
 });
 
 // ── Load post ────────────────────────────────────────────────────
@@ -441,7 +778,7 @@ async function savePost(asDraft) {
     heroCopyColor: body.heroCopyColor,
   });
 
-  if (coverUrl) body.image = { src: coverUrl, alt: title };
+  if (coverUrl) body.image = { src: coverUrl, alt: coverAlt || title };
 
   try {
     let res, data;

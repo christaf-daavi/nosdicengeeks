@@ -108,6 +108,10 @@
     .tiptap-content pre { background: var(--bg-card); padding: 10px; border-radius: var(--radius); overflow-x: auto; }
     .tiptap-content code { background: var(--bg-card); padding: 1px 5px; border-radius: 3px; }
     .tiptap-content mark { background: rgba(251,188,66,.35); color: inherit; border-radius: 2px; }
+    /* En el editor el iframe no captura el clic: así el bloque se puede
+       seleccionar, mover o borrar como cualquier nodo de TipTap. */
+    .tiptap-content .video-embed iframe { pointer-events: none; }
+    .tiptap-content .video-embed.ProseMirror-selectednode { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
 
     /* ── Publish actions ───────────────────── */
     .publish-actions { display: flex; flex-direction: column; gap: 8px; }
@@ -363,6 +367,9 @@
             <span class="tiptap-sep"></span>
             <button type="button" data-action="link" title="Enlace">🔗</button>
             <button type="button" data-action="image" title="Imagen">🖼</button>
+            <button type="button" data-action="video" title="Video (YouTube, Vimeo, TikTok)" aria-label="Insertar video">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align:middle;"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor"/></svg>
+            </button>
             <button type="button" data-action="emoji" title="Emoji">🙂</button>
             <span class="tiptap-sep"></span>
             <button type="button" data-action="bulletList" title="Lista">•≡</button>
@@ -372,6 +379,11 @@
             <span class="tiptap-sep"></span>
             <button type="button" data-action="undo" title="Deshacer">↶</button>
             <button type="button" data-action="redo" title="Rehacer">↷</button>
+            <span class="tiptap-sep"></span>
+            <button type="button" id="importMdBtn" title="Importar un archivo .md (máx 2 MB)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importar .md
+            </button>
+            <input type="file" id="importMdInput" accept=".md,.markdown,text/markdown,text/plain" hidden />
             <div id="tiptapEmojiPanel" class="tiptap-emoji-panel"></div>
           </div>
           <div id="editorContentArea" class="tiptap-content"></div>
@@ -402,7 +414,7 @@
               <div class="aside-title">Imagen de portada</div>
               <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp,image/gif"
                      style="display:none;" />
-              <div class="drop-zone" id="dropZone" onclick="document.getElementById('coverInput').click()">
+              <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Seleccionar o arrastrar imagen de portada">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Haz clic o arrastra una imagen
                 <div style="font-size:.72rem;margin-top:4px;opacity:.6;">JPG, PNG, WebP, GIF · máx 10MB</div>
@@ -586,15 +598,73 @@
 
 <!-- ── Modal selector de imagen (contenido) ──────── -->
 <div class="modal-overlay" id="contentImageModal">
-  <div class="modal" style="max-width:640px;width:90vw;">
-    <div class="modal__title">Insertar imagen</div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="contentImageModalTitle" style="max-width:640px;width:90vw;">
+    <div class="modal__title" id="contentImageModalTitle">Insertar imagen</div>
+    <div class="modal-tabs" role="tablist" aria-label="Origen de la imagen">
+      <button type="button" class="modal-tab" role="tab" id="imgTabLibrary" aria-controls="imgPanelLibrary" aria-selected="true">Biblioteca</button>
+      <button type="button" class="modal-tab" role="tab" id="imgTabUpload" aria-controls="imgPanelUpload" aria-selected="false" tabindex="-1">Subir nueva</button>
+    </div>
     <div class="modal__body" style="max-height:60vh;overflow-y:auto;">
-      <div id="contentImageGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
-        <p style="color:var(--text-muted);font-size:.85rem;">Cargando imágenes…</p>
+      <div role="tabpanel" id="imgPanelLibrary" aria-labelledby="imgTabLibrary">
+        <div id="contentImageGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+          <p style="color:var(--text-muted);font-size:.85rem;">Cargando imágenes…</p>
+        </div>
+      </div>
+      <div role="tabpanel" id="imgPanelUpload" aria-labelledby="imgTabUpload" hidden>
+        <input type="file" id="contentImageFile" accept="image/*" style="display:none;" />
+        <div class="drop-zone" id="contentImageDrop" role="button" tabindex="0"
+             aria-label="Seleccionar o arrastrar una imagen">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Haz clic o arrastra una imagen
+          <div style="font-size:.72rem;margin-top:4px;opacity:.6;">JPG, PNG, WebP, GIF · máx 10MB</div>
+        </div>
+        <img id="contentImagePreview" class="modal-preview-img" alt="Vista previa de la imagen a subir" hidden />
+        <div class="form-group" style="margin-top:12px;">
+          <label for="contentImageAlt">Texto alternativo (alt)</label>
+          <input type="text" id="contentImageAlt" placeholder="Describe la imagen" />
+        </div>
+        <div id="contentImageStatus" class="save-status" role="status" style="text-align:left;"></div>
       </div>
     </div>
     <div class="modal__actions">
       <button class="btn btn-ghost" onclick="closeContentImageModal()">Cancelar</button>
+      <button class="btn btn-primary" id="contentImageUploadBtn" hidden disabled>Subir e insertar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal insertar video ─────────────────────── -->
+<div class="modal-overlay" id="videoModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" style="max-width:560px;width:90vw;">
+    <div class="modal__title" id="videoModalTitle">Insertar video</div>
+    <div class="modal__body" style="max-height:65vh;overflow-y:auto;">
+      <div class="form-group">
+        <label for="videoUrlInput">URL del video</label>
+        <input type="url" id="videoUrlInput" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" />
+        <div style="font-size:.72rem;margin-top:4px;">YouTube (watch, youtu.be, shorts), Vimeo o TikTok</div>
+      </div>
+      <div id="videoStatus" class="save-status" role="status" style="text-align:left;"></div>
+      <div id="videoPreview" class="video-preview-slot"></div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" onclick="closeVideoModal()">Cancelar</button>
+      <button class="btn btn-primary" id="videoInsertBtn" disabled>Insertar video</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirmación al importar .md ───────────── -->
+<div class="modal-overlay" id="importConfirmModal">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="importConfirmTitle" aria-describedby="importConfirmDesc" style="max-width:480px;width:90vw;">
+    <div class="modal__title" id="importConfirmTitle">El editor ya tiene contenido</div>
+    <div class="modal__body" id="importConfirmDesc">
+      ¿Qué hacemos con el contenido de <strong id="importConfirmFile"></strong>?
+      Los campos que traiga el frontmatter se rellenan en ambos casos.
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" data-import-mode="cancel">Cancelar</button>
+      <button class="btn btn-secondary" data-import-mode="append">Agregar al final</button>
+      <button class="btn btn-primary" data-import-mode="replace">Reemplazar</button>
     </div>
   </div>
 </div>

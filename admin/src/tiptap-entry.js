@@ -1,4 +1,4 @@
-export { Editor } from '@tiptap/core';
+export { Editor, Node } from '@tiptap/core';
 export { StarterKit } from '@tiptap/starter-kit';
 export { TextStyle } from '@tiptap/extension-text-style';
 export { Color } from '@tiptap/extension-color';

@@ -3,8 +3,11 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TagBadge from '../components/TagBadge.astro';
-import siteConfig from '../data/site-config.json';
+import GoogleTagManager from '../components/GoogleTagManager.astro';
 import { getTagsPageSlug } from '../lib/tagsSlug';
+import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
+import { readableColor, OVERLAY_WORST_BG } from '../lib/contrast';
+import { formatDate, isoDate } from '../lib/formatDate';
 
 interface Props {
   title: string;
@@ -28,19 +31,21 @@ const {
   heroLabelColor, heroTitleColor, heroCopyColor,
 } = Astro.props;
 
-const formattedPubDate = pubDate.toLocaleDateString('es-ES', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const formattedPubDate = formatDate(pubDate);
+const formattedUpdatedDate = updatedDate && formatDate(updatedDate);
 
-const formattedUpdatedDate = updatedDate?.toLocaleDateString('es-ES', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
-
-const gtmId = siteConfig.gtmId || '';
+// Colores del hero elegidos en el CMS: si no alcanzan contraste AA sobre su
+// fondo se usa uno legible (p.ej. #0496ff sobre la foto oscurecida no llega).
+const hasHeroText = !!(image && (heroLabel || heroTitle || heroCopy));
+// El CMS usa el título como alt por defecto: en ese caso la portada solo
+// repetiría el <h1> a los lectores de pantalla, así que va como decorativa.
+const heroAlt = image && image.alt.trim() !== title.trim() ? image.alt : '';
+const overlayColors = {
+  label: readableColor(heroLabelColor, OVERLAY_WORST_BG, '#fbbc42'),
+  title: readableColor(heroTitleColor, OVERLAY_WORST_BG, '#ffffff', 3), // texto grande: 3:1
+  copy:  readableColor(heroCopyColor,  OVERLAY_WORST_BG, '#e2e8f0'),
+};
+const eyebrowColor = readableColor(heroLabelColor, '#111827', '#fbbc42'); // sobre --color-bg-card
 const tagsSlug = await getTagsPageSlug();
 ---
 
@@ -48,28 +53,10 @@ const tagsSlug = await getTagsPageSlug();
 <html lang="es" data-theme="dark">
   <head>
     <BaseHead title={title} description={description} image={image?.src} />
-    {gtmId && (
-      <Fragment>
-        <!-- Google Tag Manager -->
-        <script set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`} />
-        <!-- End Google Tag Manager -->
-      </Fragment>
-    )}
+    <GoogleTagManager part="head" />
   </head>
   <body>
-    {gtmId && (
-      <Fragment>
-        <!-- Google Tag Manager (noscript) -->
-        <noscript>
-          <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`} height="0" width="0" style="display:none;visibility:hidden"></iframe>
-        </noscript>
-        <!-- End Google Tag Manager (noscript) -->
-      </Fragment>
-    )}
+    <GoogleTagManager part="body" />
     <Header />
 
     <main id="main-content">
@@ -77,19 +64,26 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
         <!-- Hero de imagen -->
         {image && (
-          <div class="post-hero">
+          <div class:list={['post-hero', { 'post-hero--has-text': hasHeroText }]}>
             <img
-              src={image.src}
-              alt={image.alt}
+              src={fallbackSrcFor(image.src, 800)}
+              srcset={srcsetFor(image.src)}
+              sizes="100vw"
+              alt={heroAlt}
               class="post-hero__img"
+              width="1200"
+              height="675"
               loading="eager"
+              fetchpriority="high"
               decoding="async"
             />
-            {(heroLabel || heroTitle || heroCopy) && (
-              <div class="post-hero__overlay">
-                {heroLabel && <span class="post-hero__label" style={heroLabelColor ? `color:${heroLabelColor}` : ''}>{heroLabel}</span>}
-                {heroTitle && <p class="post-hero__title" style={heroTitleColor ? `color:${heroTitleColor}` : ''}>{heroTitle}</p>}
-                {heroCopy && <p class="post-hero__copy" style={heroCopyColor ? `color:${heroCopyColor}` : ''}>{heroCopy}</p>}
+            {/* El overlay repite título y descripción del <h1> de abajo: es
+                decorativo (aria-hidden) y en móvil no se muestra. */}
+            {hasHeroText && (
+              <div class="post-hero__overlay" aria-hidden="true">
+                {heroLabel && <span class="post-hero__label" style={`color:${overlayColors.label}`}>{heroLabel}</span>}
+                {heroTitle && <p class="post-hero__title" style={`color:${overlayColors.title}`}>{heroTitle}</p>}
+                {heroCopy && <p class="post-hero__copy" style={`color:${overlayColors.copy}`}>{heroCopy}</p>}
               </div>
             )}
           </div>
@@ -98,7 +92,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <div class="container post-container">
 
           <!-- Cabecera del artículo -->
-          <header class="post-header">
+          <header class:list={['post-header', { 'post-header--under-hero': !!image }]}>
+            {/* Eyebrow: solo en móvil, donde el overlay del hero no se muestra */}
+            {hasHeroText && heroLabel && (
+              <p class="post-eyebrow" style={`color:${eyebrowColor}`}>{heroLabel}</p>
+            )}
+
             {tags.length > 0 && (
               <div class="post-tags">
                 {tags.map((tag, i) => (
@@ -113,12 +112,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <div class="post-meta">
               <span class="post-meta__author">
                 <span class="meta-label">// autor</span>
-                <a href="/about">{author}</a>
+                <a href="/nosotros">{author}</a>
               </span>
 
               <span class="post-meta__sep" aria-hidden="true">·</span>
 
-              <time class="post-meta__date" datetime={pubDate.toISOString()}>
+              <time class="post-meta__date" datetime={isoDate(pubDate)}>
                 <span class="meta-label">// publicado</span>
                 {formattedPubDate}
               </time>
@@ -126,7 +125,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               {updatedDate && (
                 <>
                   <span class="post-meta__sep" aria-hidden="true">·</span>
-                  <time class="post-meta__date" datetime={updatedDate.toISOString()}>
+                  <time class="post-meta__date" datetime={isoDate(updatedDate)}>
                     <span class="meta-label">// actualizado</span>
                     {formattedUpdatedDate}
                   </time>
@@ -164,10 +163,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .post-hero {
     position: relative;
     width: 100%;
-    height: 500px;
+    /* 16:9 hasta 500px de alto: en tablets no se recorta de más */
+    height: min(500px, 56.25vw);
     overflow: hidden;
     border-radius: 0;
     margin-bottom: var(--space-6);
+    background: var(--color-bg-card);
   }
 
   .post-hero__img {
@@ -177,15 +178,37 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     object-position: center center;
   }
 
+  /* Overlay (>=768px). El degradado se mantiene en >=.72 bajo toda la columna
+     de texto (hasta ~62% del ancho) para asegurar contraste AA sobre zonas
+     claras de la foto; ver OVERLAY_WORST_BG en src/lib/contrast.ts. */
   .post-hero__overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.1) 100%);
+    background: linear-gradient(to right,
+      rgba(5, 10, 20, 0.78) 0%,
+      rgba(5, 10, 20, 0.72) 62%,
+      rgba(5, 10, 20, 0.12) 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 48px 60px;
+    padding: clamp(24px, 4vw, 48px) clamp(24px, 5vw, 60px);
     gap: 12px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .post-hero__overlay > * {
+    max-width: min(700px, 55vw);
+  }
+
+  /* Eyebrow sobre el <h1>: solo se muestra en móvil */
+  .post-eyebrow {
+    display: none;
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-2);
   }
 
   .post-hero__label {
@@ -207,7 +230,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   .post-hero__copy {
     font-size: clamp(1rem, 2vw, 1.35rem);
-    color: rgba(255,255,255,0.85);
+    color: #e2e8f0;
     margin: 0;
     max-width: 600px;
   }
@@ -268,9 +291,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     opacity: 0.8;
   }
 
+  /* Sin opacidad propia: sumada a la de .post-meta (.8) dejaba el verde en
+     ~3.6:1, por debajo de AA para texto de 12px. */
   .meta-label {
     color: var(--color-green);
-    opacity: 0.7;
     margin-right: var(--space-1);
   }
 
@@ -456,28 +480,40 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     text-decoration: none;
   }
 
-  @media (max-width: 768px) {
+  /* ── Hero móvil (<768px): imagen 16:9 arriba, texto debajo sobre fondo
+     sólido. El overlay no se muestra: eyebrow, <h1> y descripción del
+     .post-header ocupan su lugar, así el título aparece una sola vez. */
+  @media (max-width: 767.98px) {
     .post-hero {
-      height: 320px;
-    }
-
-    .post-hero__img {
-      object-position: left top;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      margin-bottom: 0;
     }
 
     .post-hero__overlay {
-      padding: 32px 24px;
-      gap: 8px;
+      display: none;
     }
 
-    .post-hero__title {
-      font-size: 1.6rem;
+    .post-header.post-header--under-hero {
+      display: flex;
+      flex-direction: column;
+      /* A sangre: anula el padding lateral del .container (sea cual sea) y
+         lo devuelve como padding para alinear el texto con el cuerpo. */
+      margin-inline: calc(50% - 50vw);
+      padding: var(--space-6) calc(50vw - 50%);
+      background: var(--color-bg-card);
+      border-top: 3px solid var(--color-primary);
+      border-bottom: none;
     }
 
-    .post-hero__copy {
-      font-size: 0.95rem;
-    }
+    .post-header--under-hero .post-eyebrow { display: block; order: 0; }
+    .post-header--under-hero .post-title { order: 1; }
+    .post-header--under-hero .post-description { order: 2; }
+    .post-header--under-hero .post-tags { order: 3; margin-bottom: var(--space-4); }
+    .post-header--under-hero .post-meta { order: 4; }
+  }
 
+  @media (max-width: 768px) {
     .post-header {
       padding-block: var(--space-8) var(--space-6);
     }

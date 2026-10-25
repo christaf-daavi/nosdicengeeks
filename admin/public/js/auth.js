@@ -49,10 +49,13 @@ function getToken() {
 
 async function apiFetch(path, options = {}) {
   const token = getToken();
+  // Con FormData el navegador debe fijar el Content-Type (multipart con
+  // boundary); forzar application/json rompería la subida.
+  const isFormData = options.body instanceof FormData;
   const res = await fetch(path, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       'Authorization': `Bearer ${token}`,
       ...(options.headers || {}),
     },

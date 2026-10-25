@@ -16,6 +16,10 @@ router.post('/auth/change-password', authGuard, authController.changePassword);
 router.get('/posts', authGuard, postsController.getAll);
 router.get('/posts/:filename', authGuard, postsController.getOne);
 router.post('/posts', authGuard, postsController.create);
+// Importar .md: solo parsea (frontmatter + HTML), no guarda nada
+router.post('/posts/parse-md', authGuard,
+  express.text({ type: ['text/markdown', 'text/plain'], limit: '2mb' }),
+  postsController.parseMarkdown);
 router.put('/posts/:filename', authGuard, postsController.update);
 router.delete('/posts/bulk', authGuard, postsController.bulkRemove);
 router.delete('/posts/:filename', authGuard, postsController.remove);
