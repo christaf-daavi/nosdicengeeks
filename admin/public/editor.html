@@ -379,6 +379,11 @@
             <span class="tiptap-sep"></span>
             <button type="button" data-action="undo" title="Deshacer">↶</button>
             <button type="button" data-action="redo" title="Rehacer">↷</button>
+            <span class="tiptap-sep"></span>
+            <button type="button" id="importMdBtn" title="Importar un archivo .md (máx 2 MB)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importar .md
+            </button>
+            <input type="file" id="importMdInput" accept=".md,.markdown,text/markdown,text/plain" hidden />
             <div id="tiptapEmojiPanel" class="tiptap-emoji-panel"></div>
           </div>
           <div id="editorContentArea" class="tiptap-content"></div>
@@ -644,6 +649,22 @@
     <div class="modal__actions">
       <button class="btn btn-ghost" onclick="closeVideoModal()">Cancelar</button>
       <button class="btn btn-primary" id="videoInsertBtn" disabled>Insertar video</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirmación al importar .md ───────────── -->
+<div class="modal-overlay" id="importConfirmModal">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="importConfirmTitle" aria-describedby="importConfirmDesc" style="max-width:480px;width:90vw;">
+    <div class="modal__title" id="importConfirmTitle">El editor ya tiene contenido</div>
+    <div class="modal__body" id="importConfirmDesc">
+      ¿Qué hacemos con el contenido de <strong id="importConfirmFile"></strong>?
+      Los campos que traiga el frontmatter se rellenan en ambos casos.
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" data-import-mode="cancel">Cancelar</button>
+      <button class="btn btn-secondary" data-import-mode="append">Agregar al final</button>
+      <button class="btn btn-primary" data-import-mode="replace">Reemplazar</button>
     </div>
   </div>
 </div>

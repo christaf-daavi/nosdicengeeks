@@ -168,4 +168,46 @@ function bulkDeletePosts(filenames) {
   return { deleted, errors };
 }
 
-module.exports = { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost, bulkDeletePosts };
+// gray-matter evalúa con eval() el frontmatter "---js"; en archivos que
+// sube el usuario solo se acepta YAML (o JSON).
+const IMPORT_MATTER_OPTIONS = {
+  engines: { javascript: () => { throw new Error('Frontmatter JavaScript no permitido'); } },
+};
+
+function toDateString(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+}
+
+// Parsea un .md importado desde el editor (sin guardar nada): devuelve
+// solo los campos de frontmatter que el formulario sabe rellenar y el
+// cuerpo en HTML, igual que getPost(). Lo no reconocido se ignora.
+function parseMarkdown(raw) {
+  const { data, content } = matter(raw, IMPORT_MATTER_OPTIONS);
+  const text = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '');
+  const frontmatter = {};
+
+  if (text(data.title)) frontmatter.title = text(data.title);
+  if (text(data.description)) frontmatter.description = text(data.description);
+
+  const rawTags = Array.isArray(data.tags) ? data.tags : text(data.tags).split(',');
+  const tags = rawTags.map(text).filter(Boolean);
+  if (tags.length) frontmatter.tags = tags;
+
+  const image = data.image ?? data.cover;
+  const imageSrc = typeof image === 'object' && image !== null ? text(image.src || image.url) : text(image);
+  if (imageSrc) {
+    frontmatter.image = { src: imageSrc, alt: typeof image === 'object' ? text(image.alt) : '' };
+  }
+
+  const pubDate = toDateString(data.pubDate ?? data.date);
+  if (pubDate) frontmatter.pubDate = pubDate;
+
+  if (typeof data.draft === 'boolean') frontmatter.draft = data.draft;
+  else if (data.draft === 'true' || data.draft === 'false') frontmatter.draft = data.draft === 'true';
+
+  return { frontmatter, hasFrontmatter: Object.keys(data).length > 0, html: marked.parse(content) };
+}
+
+module.exports = { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost, bulkDeletePosts, parseMarkdown };

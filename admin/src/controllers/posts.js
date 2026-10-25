@@ -1,4 +1,4 @@
-const { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost, bulkDeletePosts } = require('../utils/fileSystem');
+const { getAllPosts, getPost, createPost, updatePost, deletePost, unpublishPost, bulkDeletePosts, parseMarkdown } = require('../utils/fileSystem');
 const { runBuild } = require('../utils/builder');
 
 exports.getAll = (req, res) => {
@@ -80,6 +80,17 @@ exports.bulkRemove = (req, res) => {
     res.json({ success: true, deleted: result.deleted, errors: result.errors });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.parseMarkdown = (req, res) => {
+  if (typeof req.body !== 'string' || !req.body.trim()) {
+    return res.status(400).json({ error: 'El archivo está vacío' });
+  }
+  try {
+    res.json(parseMarkdown(req.body));
+  } catch (err) {
+    res.status(400).json({ error: `No se pudo leer el frontmatter: ${err.reason || err.message}` });
   }
 };
 

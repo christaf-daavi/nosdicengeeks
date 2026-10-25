@@ -16,6 +16,7 @@ try {
 const params   = new URLSearchParams(window.location.search);
 let   editFile = params.get('file') || null;
 let   coverUrl = null;
+let   coverAlt = null; // alt explícito (p.ej. del frontmatter importado); si no, se usa el título
 let   tags     = [];
 let   editor   = null;
 let   seoDebounce = null;
@@ -77,11 +78,12 @@ try {
 }
 
 // ── Helpers UI ───────────────────────────────────────────────────
+// autohide: true (4 s), false o una duración en ms
 function showTopAlert(type, msg, autohide = true) {
   const el = document.getElementById('topAlert');
   el.className = `alert alert-${type} show`;
   el.textContent = msg;
-  if (autohide) setTimeout(() => el.classList.remove('show'), 4000);
+  if (autohide) setTimeout(() => el.classList.remove('show'), autohide === true ? 4000 : autohide);
 }
 
 function setStatus(el, msg, color = 'var(--text-muted)') {
@@ -204,11 +206,12 @@ function runSEO() {
 document.getElementById('seoKeyword').addEventListener('input', debounceSEO);
 
 // ── Image upload (portada) ────────────────────────────────────────
-function setCoverPreview(url) {
+function setCoverPreview(url, alt = null) {
   const img    = document.getElementById('coverPreview');
   const rmBtn  = document.getElementById('removeCoverBtn');
   const zone   = document.getElementById('dropZone');
   coverUrl     = url;
+  coverAlt     = alt;
   img.src      = url;
   img.style.display    = 'block';
   rmBtn.style.display  = 'flex';
@@ -217,6 +220,7 @@ function setCoverPreview(url) {
 
 function removeCover() {
   coverUrl = null;
+  coverAlt = null;
   const img   = document.getElementById('coverPreview');
   const rmBtn = document.getElementById('removeCoverBtn');
   const zone  = document.getElementById('dropZone');
@@ -298,6 +302,7 @@ const modalClosers = {
   ogImageModal:      () => closeOgImageModal(),
   contentImageModal: () => closeContentImageModal(),
   videoModal:        () => closeVideoModal(),
+  importConfirmModal: () => closeImportConfirm('cancel'),
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
@@ -559,6 +564,124 @@ document.getElementById('videoUrlInput').addEventListener('keydown', (e) => {
 });
 document.getElementById('videoInsertBtn').addEventListener('click', insertVideo);
 
+// ── Importar .md (solo al editor; no guarda nada) ───────────────
+const MAX_MD_BYTES = 2 * 1024 * 1024;
+const MD_FILE = /\.(md|markdown|txt)$/i;
+let resolveImportMode = null;
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+// Resuelve con 'replace', 'append' o 'cancel'
+function askImportMode(filename) {
+  document.getElementById('importConfirmFile').textContent = filename;
+  openModal('importConfirmModal', document.querySelector('[data-import-mode="replace"]'));
+  return new Promise((resolve) => { resolveImportMode = resolve; });
+}
+function closeImportConfirm(mode) {
+  closeModal('importConfirmModal', mode === 'cancel');
+  if (resolveImportMode) resolveImportMode(mode);
+  resolveImportMode = null;
+}
+document.querySelectorAll('[data-import-mode]').forEach((btn) => {
+  btn.addEventListener('click', () => closeImportConfirm(btn.dataset.importMode));
+});
+document.getElementById('importConfirmModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeImportConfirm('cancel');
+});
+
+async function importMarkdownFile(file) {
+  if (!editor) {
+    showTopAlert('error', 'El editor no está disponible; no se puede importar.');
+    return;
+  }
+  if (!MD_FILE.test(file.name)) {
+    showTopAlert('error', 'El archivo debe ser .md o .markdown');
+    return;
+  }
+  if (file.size > MAX_MD_BYTES) {
+    showTopAlert('error', `El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es 2 MB`);
+    return;
+  }
+
+  let parsed;
+  try {
+    const raw = await readFileAsText(file);
+    const res = await apiFetch('/api/posts/parse-md', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      body: raw,
+    });
+    if (!res) return;
+    parsed = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showTopAlert('error', parsed.error || `No se pudo procesar el archivo (HTTP ${res.status})`, 8000);
+      return;
+    }
+  } catch (err) {
+    showTopAlert('error', `No se pudo leer el archivo: ${err.message}`);
+    return;
+  }
+
+  const mode = editor.isEmpty ? 'replace' : await askImportMode(file.name);
+  if (mode === 'cancel') return;
+  applyImportedMarkdown(parsed, mode, file.name);
+}
+
+function applyImportedMarkdown({ frontmatter: fm = {}, html = '' }, mode, filename) {
+  const imported = [];
+  const setField = (id, value) => {
+    const el = document.getElementById(id);
+    el.value = value;
+    el.dispatchEvent(new Event('input')); // slug, contador y SEO
+  };
+
+  if (fm.title)       { setField('postTitle', fm.title);             imported.push('título'); }
+  if (fm.description) { setField('postDescription', fm.description); imported.push('descripción'); }
+  if (fm.tags && fm.tags.length) {
+    tags = [];
+    fm.tags.forEach((t) => addTag(String(t)));
+    renderTags();
+    imported.push(`${tags.length} tag${tags.length === 1 ? '' : 's'}`);
+  }
+  if (fm.image && fm.image.src) {
+    setCoverPreview(fm.image.src, fm.image.alt || null);
+    document.getElementById('coverUploadStatus').textContent = '';
+    imported.push('portada');
+  }
+  if (fm.pubDate) { document.getElementById('postDate').value = fm.pubDate; imported.push('fecha'); }
+
+  if (mode === 'append') {
+    editor.chain().focus('end').insertContentAt(editor.state.doc.content.size, html).run();
+  } else {
+    editor.commands.setContent(html);
+  }
+  runSEO();
+
+  const fields = imported.length ? `${imported.join(', ')} y ` : '';
+  const action = mode === 'append' ? 'agregado al final' : 'cargado';
+  let msg = `Importado «${filename}»: ${fields}contenido ${action}.`;
+  if (fm.draft !== undefined) {
+    msg += ` El archivo indica draft: ${fm.draft}; elige "Guardar borrador" o "Publicar" al guardar.`;
+  }
+  showTopAlert('success', `${msg} Aún no se ha guardado nada.`, 8000);
+}
+
+document.getElementById('importMdBtn').addEventListener('click', () =>
+  document.getElementById('importMdInput').click()
+);
+document.getElementById('importMdInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // permite reimportar el mismo archivo
+  if (file) importMarkdownFile(file);
+});
+
 // ── Load post ────────────────────────────────────────────────────
 async function loadPost(filename) {
   try {
@@ -655,7 +778,7 @@ async function savePost(asDraft) {
     heroCopyColor: body.heroCopyColor,
   });
 
-  if (coverUrl) body.image = { src: coverUrl, alt: title };
+  if (coverUrl) body.image = { src: coverUrl, alt: coverAlt || title };
 
   try {
     let res, data;
