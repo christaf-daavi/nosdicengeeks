@@ -25040,6 +25040,7 @@ export {
   Highlight,
   Image,
   Link,
+  Node3 as Node,
   StarterKit,
   TextAlign,
   TextStyle,

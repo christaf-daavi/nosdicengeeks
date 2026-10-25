@@ -9,6 +9,7 @@
 // una sola instancia.
 import {
   Editor,
+  Node,
   StarterKit,
   TextStyle,
   Color,
@@ -18,11 +19,41 @@ import {
   Link,
   Image as ImageExt,
 } from '/js/tiptap-bundle.js';
+import { parseVideoUrl, EMBED_IFRAME_ATTRS } from '/js/video-embed.js';
 
 // @tiptap/extension-emoji no existía todavía en la serie 2.11.x (publicado
 // recién en 2.27+). El picker de emojis se implementa abajo con un panel
 // propio de emojis comunes, sin depender de esa extensión.
 const COMMON_EMOJIS = ['😀','😂','😍','🤔','😎','👍','👎','🎉','🔥','💯','🚀','⚡','💡','✅','❌','⭐','❤️','😅','🙌','👀'];
+
+// Video embebido (YouTube/Vimeo/TikTok) como bloque atómico. Se serializa
+// como <div class="video-embed"><iframe …></iframe></div>, que va tal cual
+// al .md y Astro renderiza sin tocar. Al parsear HTML, el src del iframe
+// se vuelve a validar con parseVideoUrl: cualquier iframe de otro origen
+// no matchea este nodo y el esquema de TipTap lo descarta.
+const VideoEmbed = Node.create({
+  name: 'videoEmbed',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { src: { default: null }, vertical: { default: false } };
+  },
+  parseHTML() {
+    return [{
+      tag: 'div.video-embed',
+      getAttrs: (el) => {
+        const iframe = el.querySelector('iframe');
+        const video = iframe ? parseVideoUrl(iframe.getAttribute('src')) : null;
+        return video && video.ok ? { src: video.embedUrl, vertical: video.vertical } : false;
+      },
+    }];
+  },
+  renderHTML({ node }) {
+    return ['div', { class: node.attrs.vertical ? 'video-embed video-embed--vertical' : 'video-embed' },
+      ['iframe', { src: node.attrs.src, ...EMBED_IFRAME_ATTRS }]];
+  },
+});
 
 export function createEditor(element, { content = '', onUpdate } = {}) {
   const editor = new Editor({
@@ -36,6 +67,7 @@ export function createEditor(element, { content = '', onUpdate } = {}) {
       Highlight,
       Link.configure({ openOnClick: false, autolink: true }),
       ImageExt,
+      VideoEmbed,
     ],
     content,
     onUpdate: ({ editor }) => onUpdate && onUpdate(editor),
@@ -72,7 +104,7 @@ function updateToolbarState(editor) {
   });
 }
 
-export function wireToolbar(editor, toolbarEl, { onImageRequest } = {}) {
+export function wireToolbar(editor, toolbarEl, { onImageRequest, onVideoRequest } = {}) {
   toolbarEl.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
@@ -108,6 +140,15 @@ export function wireToolbar(editor, toolbarEl, { onImageRequest } = {}) {
       }
       case 'image':
         if (onImageRequest) onImageRequest((url, alt) => chain().setImage({ src: url, alt: alt || null }).run());
+        break;
+      case 'video':
+        // El párrafo de después deja el cursor fuera del bloque: así seguir
+        // escribiendo o insertar otro video no reemplaza al recién insertado.
+        if (onVideoRequest) onVideoRequest(({ embedUrl, vertical }) =>
+          chain().insertContent([
+            { type: 'videoEmbed', attrs: { src: embedUrl, vertical } },
+            { type: 'paragraph' },
+          ]).run());
         break;
       case 'emoji':
         toggleEmojiPanel(toolbarEl, (emoji) => chain().insertContent(emoji).run());

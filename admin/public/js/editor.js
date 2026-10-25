@@ -1,3 +1,5 @@
+import { parseVideoUrl, EMBED_IFRAME_ATTRS } from '/js/video-embed.js';
+
 // ── Auth ─────────────────────────────────────────────────────────
 const token = checkAuth();
 if (!token) throw new Error('No auth');
@@ -29,6 +31,7 @@ window.removeCover = (...args) => removeCover(...args);
 window.openOgImageModal = (...args) => openOgImageModal(...args);
 window.closeOgImageModal = (...args) => closeOgImageModal(...args);
 window.closeContentImageModal = (...args) => closeContentImageModal(...args);
+window.closeVideoModal = (...args) => closeVideoModal(...args);
 
 // ── Sidebar móvil ────────────────────────────────────────────────
 document.getElementById('menuToggle').addEventListener('click', () =>
@@ -66,6 +69,7 @@ try {
   });
   wireToolbar(editor, document.getElementById('tiptapToolbar'), {
     onImageRequest: (insertFn) => openContentImageModal(insertFn),
+    onVideoRequest: (insertFn) => openVideoModal(insertFn),
   });
 } catch (err) {
   console.error('Error al inicializar TipTap:', err);
@@ -293,6 +297,7 @@ const modalClosers = {
   coverMediaModal:   () => closeCoverMediaModal(),
   ogImageModal:      () => closeOgImageModal(),
   contentImageModal: () => closeContentImageModal(),
+  videoModal:        () => closeVideoModal(),
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
@@ -483,6 +488,76 @@ document.getElementById('contentImageUploadBtn').addEventListener('click', submi
 document.getElementById('contentImageAlt').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); submitContentImageUpload(); }
 });
+
+// ── Video embebido (YouTube / Vimeo / TikTok) ────────────────────
+const VIDEO_PROVIDERS = { youtube: 'YouTube', vimeo: 'Vimeo', tiktok: 'TikTok' };
+let pendingVideoInsert = null;
+let pendingVideo = null;
+let videoPreviewDebounce = null;
+
+function openVideoModal(insertFn) {
+  pendingVideoInsert = insertFn;
+  const input = document.getElementById('videoUrlInput');
+  input.value = '';
+  updateVideoPreview();
+  openModal('videoModal', input);
+}
+function closeVideoModal(restoreFocus = true) {
+  closeModal('videoModal', restoreFocus);
+  clearTimeout(videoPreviewDebounce);
+  document.getElementById('videoPreview').replaceChildren(); // corta la reproducción
+  pendingVideo = null;
+  pendingVideoInsert = null;
+}
+document.getElementById('videoModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeVideoModal();
+});
+
+function updateVideoPreview() {
+  const value   = document.getElementById('videoUrlInput').value;
+  const status  = document.getElementById('videoStatus');
+  const preview = document.getElementById('videoPreview');
+  const video   = value.trim() ? parseVideoUrl(value) : null;
+
+  document.getElementById('videoInsertBtn').disabled = !(video && video.ok);
+  if (!video || !video.ok) {
+    pendingVideo = null;
+    preview.replaceChildren();
+    setStatus(status, video ? video.error : '', 'var(--brand-pink)');
+    return;
+  }
+  setStatus(status, `Video de ${VIDEO_PROVIDERS[video.provider]} detectado`, '#10b981');
+  if (pendingVideo && pendingVideo.embedUrl === video.embedUrl) return; // no recargar el iframe
+  pendingVideo = video;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = video.vertical ? 'video-embed video-embed--vertical' : 'video-embed';
+  const iframe = document.createElement('iframe');
+  Object.entries({ ...EMBED_IFRAME_ATTRS, title: 'Vista previa del video' })
+    .forEach(([k, v]) => iframe.setAttribute(k, v));
+  iframe.src = video.embedUrl;
+  wrapper.appendChild(iframe);
+  preview.replaceChildren(wrapper);
+}
+
+function insertVideo() {
+  clearTimeout(videoPreviewDebounce);
+  updateVideoPreview();
+  if (!pendingVideo) return;
+  const insert = pendingVideoInsert;
+  const video  = pendingVideo;
+  closeVideoModal(false); // el foco pasa al editor al insertar
+  if (insert) insert(video);
+}
+
+document.getElementById('videoUrlInput').addEventListener('input', () => {
+  clearTimeout(videoPreviewDebounce);
+  videoPreviewDebounce = setTimeout(updateVideoPreview, 350);
+});
+document.getElementById('videoUrlInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); insertVideo(); }
+});
+document.getElementById('videoInsertBtn').addEventListener('click', insertVideo);
 
 // ── Load post ────────────────────────────────────────────────────
 async function loadPost(filename) {

@@ -406,6 +406,21 @@ textarea { resize: vertical; min-height: 120px; }
   border: 1px solid var(--border);
 }
 
+/* ── Video embebido (editor, preview y modal) ─────────── */
+.video-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1.2em 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+}
+.video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-embed--vertical { aspect-ratio: 9 / 16; max-width: 340px; margin-inline: auto; }
+.video-preview-slot .video-embed { margin-bottom: 0; }
+.video-preview-slot .video-embed--vertical { max-width: 240px; }
+
 /* ── Build log ───────────────────────────────────────── */
 .build-log {
   background: #060b14;

@@ -108,6 +108,10 @@
     .tiptap-content pre { background: var(--bg-card); padding: 10px; border-radius: var(--radius); overflow-x: auto; }
     .tiptap-content code { background: var(--bg-card); padding: 1px 5px; border-radius: 3px; }
     .tiptap-content mark { background: rgba(251,188,66,.35); color: inherit; border-radius: 2px; }
+    /* En el editor el iframe no captura el clic: así el bloque se puede
+       seleccionar, mover o borrar como cualquier nodo de TipTap. */
+    .tiptap-content .video-embed iframe { pointer-events: none; }
+    .tiptap-content .video-embed.ProseMirror-selectednode { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
 
     /* ── Publish actions ───────────────────── */
     .publish-actions { display: flex; flex-direction: column; gap: 8px; }
@@ -363,6 +367,9 @@
             <span class="tiptap-sep"></span>
             <button type="button" data-action="link" title="Enlace">🔗</button>
             <button type="button" data-action="image" title="Imagen">🖼</button>
+            <button type="button" data-action="video" title="Video (YouTube, Vimeo, TikTok)" aria-label="Insertar video">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align:middle;"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor"/></svg>
+            </button>
             <button type="button" data-action="emoji" title="Emoji">🙂</button>
             <span class="tiptap-sep"></span>
             <button type="button" data-action="bulletList" title="Lista">•≡</button>
@@ -617,6 +624,26 @@
     <div class="modal__actions">
       <button class="btn btn-ghost" onclick="closeContentImageModal()">Cancelar</button>
       <button class="btn btn-primary" id="contentImageUploadBtn" hidden disabled>Subir e insertar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal insertar video ─────────────────────── -->
+<div class="modal-overlay" id="videoModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" style="max-width:560px;width:90vw;">
+    <div class="modal__title" id="videoModalTitle">Insertar video</div>
+    <div class="modal__body" style="max-height:65vh;overflow-y:auto;">
+      <div class="form-group">
+        <label for="videoUrlInput">URL del video</label>
+        <input type="url" id="videoUrlInput" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" />
+        <div style="font-size:.72rem;margin-top:4px;">YouTube (watch, youtu.be, shorts), Vimeo o TikTok</div>
+      </div>
+      <div id="videoStatus" class="save-status" role="status" style="text-align:left;"></div>
+      <div id="videoPreview" class="video-preview-slot"></div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" onclick="closeVideoModal()">Cancelar</button>
+      <button class="btn btn-primary" id="videoInsertBtn" disabled>Insertar video</button>
     </div>
   </div>
 </div>
