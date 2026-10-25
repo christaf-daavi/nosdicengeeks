@@ -107,7 +107,7 @@ export function wireToolbar(editor, toolbarEl, { onImageRequest } = {}) {
         break;
       }
       case 'image':
-        if (onImageRequest) onImageRequest((url) => chain().setImage({ src: url }).run());
+        if (onImageRequest) onImageRequest((url, alt) => chain().setImage({ src: url, alt: alt || null }).run());
         break;
       case 'emoji':
         toggleEmojiPanel(toolbarEl, (emoji) => chain().insertContent(emoji).run());

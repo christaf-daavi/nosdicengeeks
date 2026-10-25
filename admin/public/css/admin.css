@@ -348,9 +348,11 @@ textarea { resize: vertical; min-height: 120px; }
   display: flex; align-items: center; justify-content: center;
   z-index: 500;
   opacity: 0; pointer-events: none;
-  transition: opacity var(--transition);
+  /* visibility evita que el Tab llegue a controles de modales cerrados */
+  visibility: hidden;
+  transition: opacity var(--transition), visibility 0s linear .18s;
 }
-.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-overlay.open { opacity: 1; pointer-events: all; visibility: visible; transition: opacity var(--transition); }
 .modal {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -366,7 +368,43 @@ textarea { resize: vertical; min-height: 120px; }
 .modal__title { font-size: 1.05rem; font-weight: 700; color: var(--text-heading); margin-bottom: 10px; }
 .modal__body  { font-size: .875rem; color: var(--text-muted); margin-bottom: 22px; }
 .modal__body strong { color: var(--text); }
-.modal__actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal__actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* El atributo hidden debe ganarle a .btn { display:inline-flex } y similares */
+[hidden] { display: none !important; }
+
+/* ── Modal tabs ──────────────────────────────────────── */
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.modal-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  color: var(--text-muted);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.modal-tab:hover { color: var(--text); }
+.modal-tab[aria-selected="true"] { color: var(--brand-blue); border-bottom-color: var(--brand-blue); }
+.modal-tab:focus-visible,
+.drop-zone:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+
+.modal-preview-img {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  margin: 12px auto 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
 
 /* ── Build log ───────────────────────────────────────── */
 .build-log {

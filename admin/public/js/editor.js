@@ -80,10 +80,13 @@ function showTopAlert(type, msg, autohide = true) {
   if (autohide) setTimeout(() => el.classList.remove('show'), 4000);
 }
 
-function setSaveStatus(msg, color = 'var(--text-muted)') {
-  const el = document.getElementById('saveStatus');
+function setStatus(el, msg, color = 'var(--text-muted)') {
   el.textContent = msg;
   el.style.color = color;
+}
+
+function setSaveStatus(msg, color) {
+  setStatus(document.getElementById('saveStatus'), msg, color);
 }
 
 function escHtml(str) {
@@ -221,50 +224,85 @@ function removeCover() {
   document.getElementById('coverUploadStatus').textContent = '';
 }
 
-async function uploadImage(file) {
-  const status = document.getElementById('coverUploadStatus');
-  status.textContent = 'Subiendo…';
-  status.style.color = 'var(--text-muted)';
-
+// Sube un archivo a /api/media/upload. Devuelve { url, filename, width, height, … }
+// o lanza un Error con un mensaje listo para mostrar.
+async function uploadMediaFile(file) {
   const formData = new FormData();
   formData.append('image', file);
+  const res = await apiFetch('/api/media/upload', { method: 'POST', body: formData });
+  if (!res) throw new Error('Sesión expirada');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || `Error al subir la imagen (HTTP ${res.status})`);
+  }
+  return data;
+}
 
+async function uploadImage(file) {
+  const status = document.getElementById('coverUploadStatus');
+  setStatus(status, 'Subiendo…');
   try {
-    const res = await fetch('/api/media/upload', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body: formData,
-    });
-    if (res.status === 401 || res.status === 403) { logout(); return; }
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      status.textContent = data.error || 'Error al subir';
-      status.style.color = 'var(--brand-pink)';
-      return;
-    }
+    const data = await uploadMediaFile(file);
     setCoverPreview(data.url);
-    status.textContent = `${data.filename} · ${data.width}×${data.height}px`;
-    status.style.color = '#10b981';
+    setStatus(status, `${data.filename} · ${data.width}×${data.height}px`, '#10b981');
   } catch (err) {
-    status.textContent = `Error: ${err.message}`;
-    status.style.color = 'var(--brand-pink)';
+    setStatus(status, `Error: ${err.message}`, 'var(--brand-pink)');
   }
 }
 
-document.getElementById('coverInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) uploadImage(file);
+// Zona drag & drop + input file oculto: clic, Enter/Espacio o soltar un archivo
+function wireDropZone(zone, input, onFile) {
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  zone.addEventListener('dragover',  (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  });
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    input.value = ''; // permite volver a elegir el mismo archivo
+    if (file) onFile(file);
+  });
+}
+
+wireDropZone(document.getElementById('dropZone'), document.getElementById('coverInput'), (file) => {
+  if (file.type.startsWith('image/')) uploadImage(file);
 });
 
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) uploadImage(file);
+// ── Modales: foco al abrir, Esc cierra, foco vuelve al disparador ──
+let modalReturnFocus = null;
+function openModal(id, focusEl) {
+  const overlay = document.getElementById(id);
+  modalReturnFocus = document.activeElement;
+  overlay.classList.add('open');
+  (focusEl || overlay.querySelector('button, input, [tabindex="0"]'))?.focus();
+}
+function closeModal(id, restoreFocus = true) {
+  document.getElementById(id).classList.remove('open');
+  if (restoreFocus && modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus();
+  modalReturnFocus = null;
+}
+
+const modalClosers = {
+  coverMediaModal:   () => closeCoverMediaModal(),
+  ogImageModal:      () => closeOgImageModal(),
+  contentImageModal: () => closeContentImageModal(),
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = [...document.querySelectorAll('.modal-overlay.open')].pop();
+  if (open && modalClosers[open.id]) {
+    e.preventDefault();
+    modalClosers[open.id]();
+  } else if (document.getElementById('previewModal').style.display === 'block') {
+    closePreview();
+  }
 });
 
 // ── Selector de imagen genérico (grid de /api/media) ──────────────
@@ -281,11 +319,14 @@ async function loadMediaGrid(gridId, onPick) {
       return;
     }
     grid.innerHTML = files.map((f) => `
-      <div class="media-pick-item" data-url="${escHtml(f.url)}" style="cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;" title="${escHtml(f.name)}">
+      <div class="media-pick-item" data-url="${escHtml(f.url)}" role="button" tabindex="0" style="cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;" title="${escHtml(f.name)}">
         <img src="${f.url}" alt="${escHtml(f.name)}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
       </div>`).join('');
     grid.querySelectorAll('.media-pick-item').forEach((el) => {
       el.addEventListener('click', () => onPick(el.dataset.url));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(el.dataset.url); }
+      });
     });
   } catch (err) {
     grid.innerHTML = `<p style="color:var(--brand-pink);font-size:.85rem;">Error: ${escHtml(err.message)}</p>`;
@@ -294,14 +335,14 @@ async function loadMediaGrid(gridId, onPick) {
 
 // og:image
 function openOgImageModal() {
-  document.getElementById('ogImageModal').classList.add('open');
+  openModal('ogImageModal');
   loadMediaGrid('ogImageGrid', (url) => {
     document.getElementById('ogImage').value = url;
     closeOgImageModal();
   });
 }
 function closeOgImageModal() {
-  document.getElementById('ogImageModal').classList.remove('open');
+  closeModal('ogImageModal');
 }
 document.getElementById('ogImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeOgImageModal();
@@ -309,7 +350,7 @@ document.getElementById('ogImageModal').addEventListener('click', (e) => {
 
 // Imagen de portada (buscar en Media)
 function openCoverMediaModal() {
-  document.getElementById('coverMediaModal').classList.add('open');
+  openModal('coverMediaModal');
   loadMediaGrid('coverMediaGrid', (url) => {
     setCoverPreview(url);
     document.getElementById('coverUploadStatus').textContent = '';
@@ -317,7 +358,7 @@ function openCoverMediaModal() {
   });
 }
 function closeCoverMediaModal() {
-  document.getElementById('coverMediaModal').classList.remove('open');
+  closeModal('coverMediaModal');
 }
 document.getElementById('coverMediaModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCoverMediaModal();
@@ -328,21 +369,119 @@ document.getElementById('coverFileInput').addEventListener('change', (e) => {
   if (file) uploadImage(file);
 });
 
-// Imagen dentro del contenido (TipTap)
+// Imagen dentro del contenido (TipTap): pestañas Biblioteca / Subir nueva
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+let contentImageFile = null;
+
 function openContentImageModal(insertFn) {
   pendingContentImageInsert = insertFn;
-  document.getElementById('contentImageModal').classList.add('open');
-  loadMediaGrid('contentImageGrid', (url) => {
-    if (pendingContentImageInsert) pendingContentImageInsert(url);
-    closeContentImageModal();
-  });
+  resetContentImageUpload();
+  openModal('contentImageModal');
+  selectImageTab('library');
+  loadMediaGrid('contentImageGrid', (url) => insertContentImage(url, ''));
 }
-function closeContentImageModal() {
-  document.getElementById('contentImageModal').classList.remove('open');
+function closeContentImageModal(restoreFocus = true) {
+  closeModal('contentImageModal', restoreFocus);
   pendingContentImageInsert = null;
+  resetContentImageUpload();
+}
+function insertContentImage(url, alt) {
+  const insert = pendingContentImageInsert;
+  closeContentImageModal(false); // el foco pasa al editor al insertar
+  if (insert) insert(url, alt);
 }
 document.getElementById('contentImageModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeContentImageModal();
+});
+
+const imageTabs = {
+  library: { tab: document.getElementById('imgTabLibrary'), panel: document.getElementById('imgPanelLibrary') },
+  upload:  { tab: document.getElementById('imgTabUpload'),  panel: document.getElementById('imgPanelUpload') },
+};
+function selectImageTab(name, focus = false) {
+  Object.entries(imageTabs).forEach(([key, { tab, panel }]) => {
+    const active = key === name;
+    tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
+    panel.hidden = !active;
+    if (active && focus) tab.focus();
+  });
+  document.getElementById('contentImageUploadBtn').hidden = name !== 'upload';
+}
+Object.entries(imageTabs).forEach(([name, { tab }]) => {
+  tab.addEventListener('click', () => selectImageTab(name));
+  tab.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      selectImageTab(name === 'library' ? 'upload' : 'library', true);
+    }
+  });
+});
+
+function resetContentImageUpload() {
+  contentImageFile = null;
+  const preview = document.getElementById('contentImagePreview');
+  if (preview.src) URL.revokeObjectURL(preview.src);
+  preview.removeAttribute('src');
+  preview.hidden = true;
+  document.getElementById('contentImageAlt').value = '';
+  setStatus(document.getElementById('contentImageStatus'), '');
+  const btn = document.getElementById('contentImageUploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Subir e insertar';
+}
+
+function setContentImageFile(file) {
+  const status = document.getElementById('contentImageStatus');
+  if (!file.type.startsWith('image/')) {
+    resetContentImageUpload();
+    setStatus(status, 'El archivo seleccionado no es una imagen.', 'var(--brand-pink)');
+    return;
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    resetContentImageUpload();
+    setStatus(status, `La imagen pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es 10 MB.`, 'var(--brand-pink)');
+    return;
+  }
+  resetContentImageUpload();
+  contentImageFile = file;
+  const preview = document.getElementById('contentImagePreview');
+  preview.src = URL.createObjectURL(file);
+  preview.hidden = false;
+  setStatus(status, `${file.name} · ${(file.size / 1024).toFixed(0)} KB`);
+  document.getElementById('contentImageUploadBtn').disabled = false;
+  document.getElementById('contentImageAlt').focus();
+}
+
+async function submitContentImageUpload() {
+  if (!contentImageFile) return;
+  const btn    = document.getElementById('contentImageUploadBtn');
+  const status = document.getElementById('contentImageStatus');
+  const alt    = document.getElementById('contentImageAlt').value.trim();
+  btn.disabled = true;
+  btn.textContent = 'Subiendo…';
+  setStatus(status, 'Subiendo imagen…');
+  try {
+    const data = await uploadMediaFile(contentImageFile);
+    // La Biblioteca se recarga en cada apertura del modal, así que la
+    // imagen nueva aparece ahí la próxima vez sin pedirla aparte.
+    insertContentImage(data.url, alt);
+    showTopAlert('success', 'Imagen subida e insertada');
+  } catch (err) {
+    setStatus(status, `No se pudo subir: ${err.message}`, 'var(--brand-pink)');
+    btn.disabled = false;
+    btn.textContent = 'Subir e insertar';
+  }
+}
+
+wireDropZone(
+  document.getElementById('contentImageDrop'),
+  document.getElementById('contentImageFile'),
+  setContentImageFile
+);
+document.getElementById('contentImageUploadBtn').addEventListener('click', submitContentImageUpload);
+document.getElementById('contentImageAlt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); submitContentImageUpload(); }
 });
 
 // ── Load post ────────────────────────────────────────────────────
