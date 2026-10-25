@@ -3,7 +3,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TagBadge from '../components/TagBadge.astro';
-import siteConfig from '../data/site-config.json';
+import GoogleTagManager from '../components/GoogleTagManager.astro';
 import { getTagsPageSlug } from '../lib/tagsSlug';
 import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
 import { readableColor, OVERLAY_WORST_BG } from '../lib/contrast';
@@ -34,8 +34,6 @@ const {
 const formattedPubDate = formatDate(pubDate);
 const formattedUpdatedDate = updatedDate && formatDate(updatedDate);
 
-const gtmId = siteConfig.gtmId || '';
-
 // Colores del hero elegidos en el CMS: si no alcanzan contraste AA sobre su
 // fondo se usa uno legible (p.ej. #0496ff sobre la foto oscurecida no llega).
 const hasHeroText = !!(image && (heroLabel || heroTitle || heroCopy));
@@ -55,28 +53,10 @@ const tagsSlug = await getTagsPageSlug();
 <html lang="es" data-theme="dark">
   <head>
     <BaseHead title={title} description={description} image={image?.src} />
-    {gtmId && (
-      <Fragment>
-        <!-- Google Tag Manager -->
-        <script set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`} />
-        <!-- End Google Tag Manager -->
-      </Fragment>
-    )}
+    <GoogleTagManager part="head" />
   </head>
   <body>
-    {gtmId && (
-      <Fragment>
-        <!-- Google Tag Manager (noscript) -->
-        <noscript>
-          <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`} height="0" width="0" style="display:none;visibility:hidden"></iframe>
-        </noscript>
-        <!-- End Google Tag Manager (noscript) -->
-      </Fragment>
-    )}
+    <GoogleTagManager part="body" />
     <Header />
 
     <main id="main-content">

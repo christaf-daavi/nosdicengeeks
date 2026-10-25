@@ -1,0 +1,36 @@
+---
+// Snippet oficial de Google Tag Manager. Solo se incluye en builds de
+// producción (`npm run build`): con `npm run dev` import.meta.env.PROD es
+// false y las visitas locales no llegan a GTM.
+// part="head" va al principio de <head>; part="body", justo tras <body>.
+import siteConfig from '../data/site-config.json';
+
+interface Props {
+  part: 'head' | 'body';
+}
+
+const { part } = Astro.props;
+const gtmId = import.meta.env.PROD ? siteConfig.gtmId || '' : '';
+---
+
+{gtmId && part === 'head' && (
+  <Fragment>
+    <!-- Google Tag Manager -->
+    <script set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');`} />
+    <!-- End Google Tag Manager -->
+  </Fragment>
+)}
+
+{gtmId && part === 'body' && (
+  <Fragment>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`} height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+  </Fragment>
+)}
