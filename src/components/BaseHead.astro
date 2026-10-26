@@ -19,15 +19,11 @@ const siteName = 'NosDicenGeeks';
 const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
 ---
 
-<!-- Google Fonts: preconnect + carga no bloqueante (preload + onload que
-     conmuta rel a "stylesheet"). Un <link rel="stylesheet"> normal sigue
-     bloqueando el render hasta que ese CSS resuelve, aunque no sea un
-     @import; este patrón deja que la fuente cargue en paralelo sin
-     bloquear, con el <noscript> como fallback si JS está deshabilitado. -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" /></noscript>
+<!-- Fuentes autoalojadas (ver src/styles/global.css): se precargan las dos
+     porque ambas pintan el primer pantallazo (Outfit en el <h1>, que es el
+     LCP de la home; Inter en el resto del texto). -->
+<link rel="preload" href="/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
 
 <!-- Charset & Viewport -->
 <meta charset="utf-8" />
@@ -40,7 +36,6 @@ const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
 <!-- Favicons -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/png" href="/favicon.png" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
 <!-- Primary Meta -->
 <title>{fullTitle}</title>
