@@ -10,9 +10,12 @@ interface Props {
   tags: string[];
   slug: string;
   image?: { src: string; alt: string };
+  // true en la tarjeta que queda sobre el pliegue (p. ej. la primera de una
+  // página de etiqueta): su imagen puede ser el LCP y no debe ser lazy.
+  priority?: boolean;
 }
 
-const { title, description, pubDate, tags, slug, image } = Astro.props;
+const { title, description, pubDate, tags, slug, image, priority = false } = Astro.props;
 
 const formattedDate = formatDate(pubDate, 'short');
 
@@ -28,11 +31,12 @@ const formattedDate = formatDate(pubDate, 'short');
           srcset={srcsetFor(image.src)}
           alt={image.alt}
           class="post-card__image"
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          fetchpriority={priority ? 'high' : undefined}
           decoding="async"
           width="800"
           height="450"
-          sizes="(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 480px) calc(100vw - 34px), (max-width: 768px) calc(100vw - 50px), (max-width: 1024px) calc(50vw - 38px), min(calc(33.33vw - 35px), 366px)"
         />
       </div>
     )}

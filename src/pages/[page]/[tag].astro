@@ -47,8 +47,9 @@ const { tag, tagsSlug, posts } = Astro.props;
       </div>
 
       <div class="posts-grid">
-        {posts.map(post => (
+        {posts.map((post, i) => (
           <BlogPostCard
+            priority={i === 0}
             title={post.data.title}
             description={post.data.description}
             pubDate={post.data.pubDate}
