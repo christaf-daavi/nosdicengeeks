@@ -57,6 +57,34 @@ jobs:
             --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
             --query "[StandardOutputContent, StandardErrorContent]" \
             --output text
+      - name: Purge Cloudflare cache
+        env:
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # Nunca se imprimen el token ni el zone id: solo el código HTTP,
+          # "success" y, si hay, el campo "errors" de la respuesta.
+          if [ -z "$CLOUDFLARE_ZONE_ID" ] || [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Faltan CLOUDFLARE_ZONE_ID o CLOUDFLARE_API_TOKEN en los secretos del entorno production."
+            exit 1
+          fi
+          RESPONSE=$(mktemp)
+          HTTP_STATUS=$(curl -sS -o "$RESPONSE" -w "%{http_code}" -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}') || {
+            echo "::error::No se pudo contactar con la API de Cloudflare para purgar la caché."
+            exit 1
+          }
+          if [ "$(jq -r '.success == true' "$RESPONSE" 2>/dev/null)" = "true" ]; then
+            echo "Caché de Cloudflare purgada (HTTP $HTTP_STATUS)."
+          else
+            echo "::error::La purga de la caché de Cloudflare falló (HTTP $HTTP_STATUS)."
+            echo "Errores devueltos por Cloudflare:"
+            jq '.errors' "$RESPONSE" 2>/dev/null || echo "(la respuesta no es JSON válido)"
+            exit 1
+          fi
       - name: Verify deployment
         run: |
           sleep 5
