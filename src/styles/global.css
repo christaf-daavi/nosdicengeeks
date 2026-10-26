@@ -7,10 +7,15 @@
    Un woff2 variable por familia, subconjunto latino. Los rangos de peso
    reproducen los que se pedían a Google Fonts (Inter 400–600, Outfit
    400–800): pesos fuera del rango se acotan igual que antes.
-   Las familias "Fallback" ajustan Arial (iOS/Windows/macOS) y Roboto
-   (Android) al ancho y a las métricas verticales de cada fuente, medidos
-   sobre texto en español en los pesos que se usan (Inter 400, Outfit
-   700/800), para que el swap no mueva el layout. */
+   Las familias "Fallback" ajustan Arial (iOS/Windows/macOS; Liberation
+   Sans y Arimo son clones métricos, en ChromeOS y Linux), Roboto (Android)
+   y DejaVu Sans (Linux sin Arial) al ancho y a las métricas verticales de
+   cada fuente para que el swap no mueva el layout. Hay una cara regular
+   (400) y otra bold (700) por respaldo: sin la bold, los títulos usarían
+   negrita sintética de la regular, más estrecha, y cambiarían los saltos
+   de línea. Cada size-adjust se eligió en Chromium minimizando los
+   bloques de texto real del blog (home, posts, nosotros; 360–1280 px)
+   que cambian de alto entre el respaldo y la fuente final. */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -31,37 +36,121 @@
 
 @font-face {
   font-family: 'Inter Fallback';
-  src: local('Arial'), local('ArialMT');
+  font-weight: 400;
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
   size-adjust: 105.4%;
   ascent-override: 91.91%;
-  descent-override: 22.88%;
+  descent-override: 22.89%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Inter Fallback';
+  font-weight: 700;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold');
+  size-adjust: 100.9%;
+  ascent-override: 96.0%;
+  descent-override: 23.9%;
   line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Inter Fallback Android';
+  font-weight: 400;
   src: local('Roboto'), local('Roboto-Regular');
-  size-adjust: 107.1%;
-  ascent-override: 90.45%;
-  descent-override: 22.52%;
+  size-adjust: 106%;
+  ascent-override: 91.39%;
+  descent-override: 22.76%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Inter Fallback Android';
+  font-weight: 700;
+  src: local('Roboto Bold'), local('Roboto-Bold');
+  size-adjust: 106.1%;
+  ascent-override: 91.29%;
+  descent-override: 22.73%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Inter Fallback Linux';
+  font-weight: 400;
+  src: local('DejaVu Sans'), local('DejaVuSans');
+  size-adjust: 94.5%;
+  ascent-override: 102.51%;
+  descent-override: 25.52%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Inter Fallback Linux';
+  font-weight: 700;
+  src: local('DejaVu Sans Bold'), local('DejaVuSans-Bold');
+  size-adjust: 84.5%;
+  ascent-override: 114.67%;
+  descent-override: 28.55%;
   line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Outfit Fallback';
-  src: local('Arial'), local('ArialMT');
-  size-adjust: 95%;
-  ascent-override: 105.26%;
-  descent-override: 27.37%;
+  font-weight: 400;
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
+  size-adjust: 98.4%;
+  ascent-override: 101.6%;
+  descent-override: 26.42%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Outfit Fallback';
+  font-weight: 700;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold');
+  size-adjust: 95.5%;
+  ascent-override: 104.71%;
+  descent-override: 27.23%;
   line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Outfit Fallback Android';
+  font-weight: 400;
   src: local('Roboto'), local('Roboto-Regular');
+  size-adjust: 99.6%;
+  ascent-override: 100.41%;
+  descent-override: 26.11%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Outfit Fallback Android';
+  font-weight: 700;
+  src: local('Roboto Bold'), local('Roboto-Bold');
   size-adjust: 101.5%;
   ascent-override: 98.52%;
   descent-override: 25.62%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Outfit Fallback Linux';
+  font-weight: 400;
+  src: local('DejaVu Sans'), local('DejaVuSans');
+  size-adjust: 87.5%;
+  ascent-override: 114.3%;
+  descent-override: 29.72%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Outfit Fallback Linux';
+  font-weight: 700;
+  src: local('DejaVu Sans Bold'), local('DejaVuSans-Bold');
+  size-adjust: 80%;
+  ascent-override: 125.00%;
+  descent-override: 32.50%;
   line-gap-override: 0%;
 }
 
@@ -93,8 +182,8 @@
   --color-border-muted:#151f30;
 
   /* Typography */
-  --font-heading: 'Outfit', 'Outfit Fallback', 'Outfit Fallback Android', system-ui, sans-serif;
-  --font-body:    'Inter', 'Inter Fallback', 'Inter Fallback Android', system-ui, sans-serif;
+  --font-heading: 'Outfit', 'Outfit Fallback', 'Outfit Fallback Android', 'Outfit Fallback Linux', system-ui, sans-serif;
+  --font-body:    'Inter', 'Inter Fallback', 'Inter Fallback Android', 'Inter Fallback Linux', system-ui, sans-serif;
   --font-code:    'Fira Code', 'Cascadia Code', 'Courier New', monospace;
 
   /* Sizing */
