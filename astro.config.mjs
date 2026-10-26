@@ -14,6 +14,9 @@ export default defineConfig({
 
   build: {
     format: 'directory',
+    // CSS en línea en cada HTML (~4-5 KB con brotli): quita las hojas
+    // /_astro/*.css que bloqueaban el primer pintado en móvil.
+    inlineStylesheets: 'always',
   },
 
   integrations: [sitemap()],
