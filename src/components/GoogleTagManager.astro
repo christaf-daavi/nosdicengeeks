@@ -1,8 +1,17 @@
 ---
-// Snippet oficial de Google Tag Manager. Solo se incluye en builds de
-// producción (`npm run build`): con `npm run dev` import.meta.env.PROD es
-// false y las visitas locales no llegan a GTM.
-// part="head" va al principio de <head>; part="body", justo tras <body>.
+// Google Tag Manager, solo en builds de producción (`npm run build`): con
+// `npm run dev` import.meta.env.PROD es false y las visitas locales no
+// llegan a GTM. part="head" va en <head>; part="body", justo tras <body>.
+//
+// Carga diferida: gtm.js + gtag.js son ~300 KB y ~500 ms de CPU en móvil.
+// Con el snippet estándar competían con el primer pintado y PageSpeed
+// proyectaba el LCP de la home en ~5 s. Ahora gtm.js se inyecta con lo que
+// ocurra primero:
+//   - la primera interacción (toque, tecla, scroll), o
+//   - tras `load`, en el primer hueco libre (requestIdleCallback, tope 3 s).
+// dataLayer existe desde el principio, así que lo que se empuje antes queda
+// en cola. Contrapartida: una visita que se va antes de `load` + idle sin
+// interactuar no se registra (ver el commit que introdujo este cambio).
 import siteConfig from '../data/site-config.json';
 
 interface Props {
@@ -15,12 +24,16 @@ const gtmId = import.meta.env.PROD ? siteConfig.gtmId || '' : '';
 
 {gtmId && part === 'head' && (
   <Fragment>
-    <!-- Google Tag Manager -->
-    <script set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`} />
+    <!-- Google Tag Manager (diferido) -->
+    <script set:html={`(function(w,d,i){w.dataLayer=w.dataLayer||[];
+var ev=['pointerdown','keydown','touchstart','scroll'],o={capture:true,passive:true},done=false;
+function gtm(){if(done)return;done=true;ev.forEach(function(e){w.removeEventListener(e,gtm,o)});
+w.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+var j=d.createElement('script');j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;d.head.appendChild(j)}
+ev.forEach(function(e){w.addEventListener(e,gtm,o)});
+function idle(){'requestIdleCallback' in w?w.requestIdleCallback(gtm,{timeout:3000}):setTimeout(gtm,3000)}
+d.readyState==='complete'?idle():w.addEventListener('load',idle,{once:true});
+})(window,document,'${gtmId}');`} />
     <!-- End Google Tag Manager -->
   </Fragment>
 )}
