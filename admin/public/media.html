@@ -44,7 +44,7 @@
     #fileInput { display: none; }
     .copied-toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; font-size: .85rem; color: var(--text); box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; z-index: 999; }
     .copied-toast.show { opacity: 1; transform: translateY(0); }
-    .main { min-width: 0; width: calc(100vw - 240px); }
+    @media (min-width: 769px) { .main { min-width: 0; width: calc(100vw - 240px); } } /* en móvil, el ancho completo de admin.css */
     .content { min-width: 0; width: 100%; }
     .dropzone { width: 100%; box-sizing: border-box; }
     .media-grid { width: 100%; box-sizing: border-box; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; }

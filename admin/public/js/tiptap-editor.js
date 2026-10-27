@@ -55,9 +55,10 @@ const VideoEmbed = Node.create({
   },
 });
 
-export function createEditor(element, { content = '', onUpdate } = {}) {
+export function createEditor(element, { content = '', onUpdate, editorProps = {} } = {}) {
   const editor = new Editor({
     element,
+    editorProps,
     extensions: [
       StarterKit,
       TextStyle,

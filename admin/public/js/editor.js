@@ -68,7 +68,7 @@ try {
   editor = createEditor(document.getElementById('editorContentArea'), {
     onUpdate: () => debounceSEO(),
   });
-  wireToolbar(editor, document.getElementById('tiptapToolbar'), {
+  wireToolbar(editor, document.getElementById('editorToolbarWrap'), {
     onImageRequest: (insertFn) => openContentImageModal(insertFn),
     onVideoRequest: (insertFn) => openVideoModal(insertFn),
   });
@@ -76,6 +76,41 @@ try {
   console.error('Error al inicializar TipTap:', err);
   showTopAlert('error', `No se pudo cargar el editor de texto enriquecido: ${err.message}`, false);
 }
+
+// ── Barras fijas: alturas reales → variables CSS y márgenes de scroll ──
+// --admin-topbar-h  top de la barra del editor y de "Publicación"
+// --editor-toolbar-h alto de la barra del editor
+// --sticky-top-h    scroll-padding-top (foco por teclado y anclas)
+// --publish-bar-h   barra inferior de botones en una columna (≤900px)
+// ProseMirror usa scrollMargin/scrollThreshold al llevar el cursor a la
+// vista: con ellos el cursor no queda bajo la barra fija ni bajo la barra
+// inferior al escribir al final de un post largo.
+const singleColumn = window.matchMedia('(max-width: 900px)');
+const stickyEls = {
+  topbar:  document.querySelector('.topbar'),
+  toolbar: document.getElementById('editorToolbarWrap'),
+  publish: document.getElementById('publishSection'),
+};
+function updateStickyMetrics() {
+  const topbarH  = stickyEls.topbar.offsetHeight;
+  const toolbarH = stickyEls.toolbar.offsetHeight;
+  const publishH = stickyEls.publish.offsetHeight;
+  const bottomH  = singleColumn.matches ? publishH : 0;
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--admin-topbar-h', `${topbarH}px`);
+  rootStyle.setProperty('--editor-toolbar-h', `${toolbarH}px`);
+  rootStyle.setProperty('--publish-bar-h', `${bottomH}px`);
+  rootStyle.setProperty('--sticky-top-h',
+    `${topbarH + (singleColumn.matches ? toolbarH : Math.max(toolbarH, publishH))}px`);
+  if (editor) {
+    const margin = { top: topbarH + toolbarH + 16, bottom: bottomH + 16, left: 0, right: 0 };
+    editor.setOptions({ editorProps: { scrollMargin: margin, scrollThreshold: margin } });
+  }
+}
+const stickyObserver = new ResizeObserver(updateStickyMetrics);
+Object.values(stickyEls).forEach((el) => stickyObserver.observe(el));
+singleColumn.addEventListener('change', updateStickyMetrics);
+updateStickyMetrics();
 
 // ── Helpers UI ───────────────────────────────────────────────────
 // autohide: true (4 s), false o una duración en ms
