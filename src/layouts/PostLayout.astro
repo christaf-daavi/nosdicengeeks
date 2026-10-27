@@ -6,7 +6,6 @@ import TagBadge from '../components/TagBadge.astro';
 import GoogleTagManager from '../components/GoogleTagManager.astro';
 import { getTagsPageSlug } from '../lib/tagsSlug';
 import { srcsetFor, fallbackSrcFor } from '../lib/responsiveImage';
-import { readableColor, OVERLAY_WORST_BG } from '../lib/contrast';
 import { formatDate, isoDate } from '../lib/formatDate';
 
 interface Props {
@@ -34,18 +33,17 @@ const {
 const formattedPubDate = formatDate(pubDate);
 const formattedUpdatedDate = updatedDate && formatDate(updatedDate);
 
-// Colores del hero elegidos en el CMS: si no alcanzan contraste AA sobre su
-// fondo se usa uno legible (p.ej. #0496ff sobre la foto oscurecida no llega).
 const hasHeroText = !!(image && (heroLabel || heroTitle || heroCopy));
 // El CMS usa el título como alt por defecto: en ese caso la portada solo
 // repetiría el <h1> a los lectores de pantalla, así que va como decorativa.
 const heroAlt = image && image.alt.trim() !== title.trim() ? image.alt : '';
-const overlayColors = {
-  label: readableColor(heroLabelColor, OVERLAY_WORST_BG, '#fbbc42'),
-  title: readableColor(heroTitleColor, OVERLAY_WORST_BG, '#ffffff', 3), // texto grande: 3:1
-  copy:  readableColor(heroCopyColor,  OVERLAY_WORST_BG, '#e2e8f0'),
+// Colores del hero elegidos en el CMS: se respetan siempre, también en
+// móvil. El CMS avisa (sin bloquear) si alguno tiene poco contraste.
+const heroColors = {
+  label: heroLabelColor || '#fbbc42',
+  title: heroTitleColor || '#ffffff',
+  copy:  heroCopyColor  || '#e2e8f0',
 };
-const eyebrowColor = readableColor(heroLabelColor, '#111827', '#fbbc42'); // sobre --color-bg-card
 const tagsSlug = await getTagsPageSlug();
 ---
 
@@ -81,9 +79,9 @@ const tagsSlug = await getTagsPageSlug();
                 decorativo (aria-hidden) y en móvil no se muestra. */}
             {hasHeroText && (
               <div class="post-hero__overlay" aria-hidden="true">
-                {heroLabel && <span class="post-hero__label" style={`color:${overlayColors.label}`}>{heroLabel}</span>}
-                {heroTitle && <p class="post-hero__title" style={`color:${overlayColors.title}`}>{heroTitle}</p>}
-                {heroCopy && <p class="post-hero__copy" style={`color:${overlayColors.copy}`}>{heroCopy}</p>}
+                {heroLabel && <span class="post-hero__label" style={`color:${heroColors.label}`}>{heroLabel}</span>}
+                {heroTitle && <p class="post-hero__title" style={`color:${heroColors.title}`}>{heroTitle}</p>}
+                {heroCopy && <p class="post-hero__copy" style={`color:${heroColors.copy}`}>{heroCopy}</p>}
               </div>
             )}
           </div>
@@ -92,10 +90,13 @@ const tagsSlug = await getTagsPageSlug();
         <div class="container post-container">
 
           <!-- Cabecera del artículo -->
-          <header class:list={['post-header', { 'post-header--under-hero': !!image }]}>
+          <header
+            class:list={['post-header', { 'post-header--under-hero': !!image, 'post-header--hero-colors': hasHeroText }]}
+            style={hasHeroText ? `--hero-title-color:${heroColors.title};--hero-copy-color:${heroColors.copy}` : undefined}
+          >
             {/* Eyebrow: solo en móvil, donde el overlay del hero no se muestra */}
             {hasHeroText && heroLabel && (
-              <p class="post-eyebrow" style={`color:${eyebrowColor}`}>{heroLabel}</p>
+              <p class="post-eyebrow" style={`color:${heroColors.label}`}>{heroLabel}</p>
             )}
 
             {tags.length > 0 && (
@@ -178,16 +179,16 @@ const tagsSlug = await getTagsPageSlug();
     object-position: center center;
   }
 
-  /* Overlay (>=768px). El degradado se mantiene en >=.72 bajo toda la columna
-     de texto (hasta ~62% del ancho) para asegurar contraste AA sobre zonas
-     claras de la foto; ver OVERLAY_WORST_BG en src/lib/contrast.ts. */
+  /* Overlay (>=768px). Degradado oscuro (>=.82 bajo la columna de texto,
+     hasta ~62% del ancho) para que cualquier color de la paleta elegido en
+     el CMS se lea sobre zonas claras de la foto. */
   .post-hero__overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(to right,
-      rgba(5, 10, 20, 0.78) 0%,
-      rgba(5, 10, 20, 0.72) 62%,
-      rgba(5, 10, 20, 0.12) 100%);
+      rgba(5, 10, 20, 0.88) 0%,
+      rgba(5, 10, 20, 0.82) 62%,
+      rgba(5, 10, 20, 0.3) 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -407,32 +408,6 @@ const tagsSlug = await getTagsPageSlug();
     margin-bottom: 0;
   }
 
-  .prose :global(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin-block: var(--space-6);
-    font-size: var(--text-sm);
-  }
-
-  .prose :global(th) {
-    background: var(--color-bg-elevated);
-    color: var(--color-green);
-    font-family: var(--font-code);
-    font-weight: 500;
-    padding: var(--space-3) var(--space-4);
-    text-align: left;
-    border: 1px solid var(--color-border);
-  }
-
-  .prose :global(td) {
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--color-border-muted);
-  }
-
-  .prose :global(tr:nth-child(even) td) {
-    background: rgba(22, 27, 34, 0.5);
-  }
-
   .prose :global(hr) {
     border: none;
     border-top: 1px solid var(--color-border);
@@ -507,6 +482,10 @@ const tagsSlug = await getTagsPageSlug();
     }
 
     .post-header--under-hero .post-eyebrow { display: block; order: 0; }
+    /* En móvil este bloque es el hero: título y entradilla con los colores
+       de título y copy del hero elegidos en el CMS */
+    .post-header--hero-colors .post-title { color: var(--hero-title-color); }
+    .post-header--hero-colors .post-description { color: var(--hero-copy-color); }
     .post-header--under-hero .post-title { order: 1; }
     .post-header--under-hero .post-description { order: 2; }
     .post-header--under-hero .post-tags { order: 3; margin-bottom: var(--space-4); }

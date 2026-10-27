@@ -911,6 +911,76 @@ pre code {
   color: var(--color-text);
 }
 
+/* ─── Tablas en el contenido de los posts ────────────────────────
+   Las crea el CMS (TipTap: <table><tbody><tr><th>…, con celdas que
+   pueden llevar style="text-align") o vienen de tablas GFM en el .md
+   (atributo align). El estilo en línea y align ganan; sin ellos, el th
+   se alinea al inicio. */
+.prose table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin-block: var(--space-6);
+  font-size: 0.95em;
+  line-height: 1.55;
+}
+
+.prose th,
+.prose td {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.prose th {
+  background: #0f2a45;               /* azul de marca sobre el fondo oscuro */
+  color: #f0f4ff;                    /* contraste ≈ 13:1 */
+  font-family: var(--font-heading);
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.prose th:not([align]):not([style*="text-align"]) {
+  text-align: start;
+}
+
+.prose td {
+  color: var(--color-text);
+}
+
+/* Filas alternas (cuerpo); la fila de encabezado no cuenta */
+.prose tr:nth-child(even) > td {
+  background: rgba(4, 150, 255, 0.06);
+}
+
+.prose tr:hover > td {
+  background: rgba(251, 188, 66, 0.07);
+}
+
+/* TipTap envuelve el texto de cada celda en <p>. :nth-child(n) solo sube
+   la especificidad por encima de `.prose p` (scoped en PostLayout). */
+.prose :is(th, td) > p:nth-child(n) {
+  margin-block: 0;
+}
+
+.prose :is(th, td) > p + p:nth-child(n) {
+  margin-top: 0.5em;
+}
+
+/* Móvil: la tabla se desplaza en horizontal en lugar de desbordar */
+@media (max-width: 767.98px) {
+  .prose table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ancho mínimo legible: mejor desplazar que apretar el texto */
+  .prose :is(th, td) {
+    min-width: 7rem;
+  }
+}
+
 /* ─── Video embebido (insertado desde el CMS) ────────────────── */
 .video-embed {
   position: relative;

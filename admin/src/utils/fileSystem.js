@@ -56,7 +56,7 @@ function getPost(filename) {
 function createPost(data) {
   const {
     title, description = '', content = '', tags = [], author = '', draft = false, pubDate,
-    ogTitle, ogDescription, ogImage, twitterCard, slug,
+    image, ogTitle, ogDescription, ogImage, twitterCard, slug,
     heroLabel, heroTitle, heroCopy,
     heroLabelColor, heroTitleColor, heroCopyColor,
   } = data;
@@ -77,6 +77,8 @@ function createPost(data) {
     pubDate: pubDate || new Date().toISOString().split('T')[0],
     tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
     author,
+    // Antes se omitía: la portada de un post nuevo se perdía al primer guardado
+    ...(image && image.src ? { image: { src: image.src, alt: image.alt || title } } : {}),
     draft,
     slug: slugify(slug || title),
     og_title: ogTitle || '',

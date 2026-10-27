@@ -16,7 +16,6 @@ try {
 const params   = new URLSearchParams(window.location.search);
 let   editFile = params.get('file') || null;
 let   coverUrl = null;
-let   coverAlt = null; // alt explícito (p.ej. del frontmatter importado); si no, se usa el título
 let   tags     = [];
 let   editor   = null;
 let   seoDebounce = null;
@@ -68,7 +67,7 @@ try {
   editor = createEditor(document.getElementById('editorContentArea'), {
     onUpdate: () => debounceSEO(),
   });
-  wireToolbar(editor, document.getElementById('tiptapToolbar'), {
+  wireToolbar(editor, document.getElementById('editorToolbarWrap'), {
     onImageRequest: (insertFn) => openContentImageModal(insertFn),
     onVideoRequest: (insertFn) => openVideoModal(insertFn),
   });
@@ -76,6 +75,41 @@ try {
   console.error('Error al inicializar TipTap:', err);
   showTopAlert('error', `No se pudo cargar el editor de texto enriquecido: ${err.message}`, false);
 }
+
+// ── Barras fijas: alturas reales → variables CSS y márgenes de scroll ──
+// --admin-topbar-h  top de la barra del editor y de "Publicación"
+// --editor-toolbar-h alto de la barra del editor
+// --sticky-top-h    scroll-padding-top (foco por teclado y anclas)
+// --publish-bar-h   barra inferior de botones en una columna (≤900px)
+// ProseMirror usa scrollMargin/scrollThreshold al llevar el cursor a la
+// vista: con ellos el cursor no queda bajo la barra fija ni bajo la barra
+// inferior al escribir al final de un post largo.
+const singleColumn = window.matchMedia('(max-width: 900px)');
+const stickyEls = {
+  topbar:  document.querySelector('.topbar'),
+  toolbar: document.getElementById('editorToolbarWrap'),
+  publish: document.getElementById('publishSection'),
+};
+function updateStickyMetrics() {
+  const topbarH  = stickyEls.topbar.offsetHeight;
+  const toolbarH = stickyEls.toolbar.offsetHeight;
+  const publishH = stickyEls.publish.offsetHeight;
+  const bottomH  = singleColumn.matches ? publishH : 0;
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--admin-topbar-h', `${topbarH}px`);
+  rootStyle.setProperty('--editor-toolbar-h', `${toolbarH}px`);
+  rootStyle.setProperty('--publish-bar-h', `${bottomH}px`);
+  rootStyle.setProperty('--sticky-top-h',
+    `${topbarH + (singleColumn.matches ? toolbarH : Math.max(toolbarH, publishH))}px`);
+  if (editor) {
+    const margin = { top: topbarH + toolbarH + 16, bottom: bottomH + 16, left: 0, right: 0 };
+    editor.setOptions({ editorProps: { scrollMargin: margin, scrollThreshold: margin } });
+  }
+}
+const stickyObserver = new ResizeObserver(updateStickyMetrics);
+Object.values(stickyEls).forEach((el) => stickyObserver.observe(el));
+singleColumn.addEventListener('change', updateStickyMetrics);
+updateStickyMetrics();
 
 // ── Helpers UI ───────────────────────────────────────────────────
 // autohide: true (4 s), false o una duración en ms
@@ -201,26 +235,42 @@ function runSEO() {
     editor ? editor.getText() : '',
     document.getElementById('seoKeyword').value
   );
+  updateCoverAltCheck();
+}
+
+// Indicador informativo (no cuenta para el score): con portada, alt propio
+// y distinto del título, que el blog trata como decorativo (alt="").
+function updateCoverAltCheck() {
+  const item = document.getElementById('seo-cover-alt');
+  if (!item) return;
+  const alt   = document.getElementById('coverAlt').value.trim();
+  const title = document.getElementById('postTitle').value.trim();
+  const ok    = !!alt && alt !== title;
+  item.querySelector('.seo-dot').className = 'seo-dot' + (coverUrl ? (ok ? ' seo-green' : ' seo-red') : '');
+  item.querySelector('.seo-label').textContent = !coverUrl
+    ? 'Portada con alt descriptivo (sin portada)'
+    : ok ? 'Portada con alt descriptivo' : 'Portada sin alt descriptivo (se usará el título)';
 }
 
 document.getElementById('seoKeyword').addEventListener('input', debounceSEO);
 
 // ── Image upload (portada) ────────────────────────────────────────
-function setCoverPreview(url, alt = null) {
+// El alt de la portada (#coverAlt) es independiente de la imagen: se
+// mantiene al subir o cambiar la portada. Vacío al guardar → el título.
+function setCoverPreview(url) {
   const img    = document.getElementById('coverPreview');
   const rmBtn  = document.getElementById('removeCoverBtn');
   const zone   = document.getElementById('dropZone');
   coverUrl     = url;
-  coverAlt     = alt;
   img.src      = url;
   img.style.display    = 'block';
   rmBtn.style.display  = 'flex';
   zone.style.display   = 'none';
+  debounceSEO();
 }
 
 function removeCover() {
   coverUrl = null;
-  coverAlt = null;
   const img   = document.getElementById('coverPreview');
   const rmBtn = document.getElementById('removeCoverBtn');
   const zone  = document.getElementById('dropZone');
@@ -230,7 +280,10 @@ function removeCover() {
   zone.style.display  = '';
   document.getElementById('coverInput').value = '';
   document.getElementById('coverUploadStatus').textContent = '';
+  debounceSEO();
 }
+
+document.getElementById('coverAlt').addEventListener('input', debounceSEO);
 
 // Sube un archivo a /api/media/upload. Devuelve { url, filename, width, height, … }
 // o lanza un Error con un mensaje listo para mostrar.
@@ -651,7 +704,8 @@ function applyImportedMarkdown({ frontmatter: fm = {}, html = '' }, mode, filena
     imported.push(`${tags.length} tag${tags.length === 1 ? '' : 's'}`);
   }
   if (fm.image && fm.image.src) {
-    setCoverPreview(fm.image.src, fm.image.alt || null);
+    setCoverPreview(fm.image.src);
+    if (fm.image.alt) document.getElementById('coverAlt').value = fm.image.alt;
     document.getElementById('coverUploadStatus').textContent = '';
     imported.push('portada');
   }
@@ -711,6 +765,8 @@ async function loadPost(filename) {
     document.getElementById('twitterCard').value   = fm.twitter_card   || 'summary_large_image';
 
     if (fm.image && fm.image.src) setCoverPreview(fm.image.src);
+    const loadedAlt = (fm.image && fm.image.alt || '').trim();
+    document.getElementById('coverAlt').value = loadedAlt && loadedAlt !== (fm.title || '').trim() ? loadedAlt : '';
 
     document.getElementById('heroLabel').value = fm.heroLabel || '';
     document.getElementById('heroTitle').value = fm.heroTitle || '';
@@ -778,7 +834,7 @@ async function savePost(asDraft) {
     heroCopyColor: body.heroCopyColor,
   });
 
-  if (coverUrl) body.image = { src: coverUrl, alt: coverAlt || title };
+  if (coverUrl) body.image = { src: coverUrl, alt: document.getElementById('coverAlt').value.trim() || title };
 
   try {
     let res, data;
@@ -852,12 +908,42 @@ async function runBuildAfterSave() {
 document.getElementById('postDate').value = new Date().toISOString().split('T')[0];
 
 // ── Swatches de color del hero ────────────────────────────────────
+// Aviso de contraste (no bloqueante, no cambia la elección): texto pequeño
+// sobre el fondo oscuro del hero (--color-bg-card del blog, #111827).
+const HERO_DARK_BG = '#111827';
+function contrastRatio(hexA, hexB) {
+  const lum = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [a, b] = [lum(hexA), lum(hexB)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+function updateContrastWarning(group) {
+  const color = document.getElementById(group.dataset.target).value;
+  let warning = group.nextElementSibling;
+  if (!warning || !warning.classList.contains('contrast-warning')) {
+    warning = document.createElement('p');
+    warning.className = 'contrast-warning';
+    warning.setAttribute('role', 'status');
+    warning.setAttribute('aria-live', 'polite');
+    group.after(warning);
+  }
+  const ratio = /^#[0-9a-f]{6}$/i.test(color) ? contrastRatio(color, HERO_DARK_BG) : 21;
+  warning.textContent = ratio < 4.5
+    ? `Contraste bajo sobre fondo oscuro: ${ratio.toFixed(1).replace('.', ',')}:1`
+    : '';
+}
+
 function setActiveSwatch(groupSelector, color) {
   const group = document.querySelector(groupSelector);
   if (!group) return;
   group.querySelectorAll('.swatch').forEach((sw) => {
     sw.classList.toggle('selected', sw.dataset.color === color);
+    sw.setAttribute('aria-pressed', String(sw.dataset.color === color));
   });
+  updateContrastWarning(group);
 }
 
 document.querySelectorAll('.color-swatches').forEach((group) => {
@@ -865,9 +951,8 @@ document.querySelectorAll('.color-swatches').forEach((group) => {
   const input = document.getElementById(targetId);
   group.querySelectorAll('.swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
-      group.querySelectorAll('.swatch').forEach((s) => s.classList.remove('selected'));
-      sw.classList.add('selected');
       input.value = sw.dataset.color;
+      setActiveSwatch(`[data-target="${targetId}"]`, sw.dataset.color);
     });
   });
 });
