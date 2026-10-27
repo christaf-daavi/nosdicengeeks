@@ -16,7 +16,6 @@ try {
 const params   = new URLSearchParams(window.location.search);
 let   editFile = params.get('file') || null;
 let   coverUrl = null;
-let   coverAlt = null; // alt explícito (p.ej. del frontmatter importado); si no, se usa el título
 let   tags     = [];
 let   editor   = null;
 let   seoDebounce = null;
@@ -236,26 +235,42 @@ function runSEO() {
     editor ? editor.getText() : '',
     document.getElementById('seoKeyword').value
   );
+  updateCoverAltCheck();
+}
+
+// Indicador informativo (no cuenta para el score): con portada, alt propio
+// y distinto del título, que el blog trata como decorativo (alt="").
+function updateCoverAltCheck() {
+  const item = document.getElementById('seo-cover-alt');
+  if (!item) return;
+  const alt   = document.getElementById('coverAlt').value.trim();
+  const title = document.getElementById('postTitle').value.trim();
+  const ok    = !!alt && alt !== title;
+  item.querySelector('.seo-dot').className = 'seo-dot' + (coverUrl ? (ok ? ' seo-green' : ' seo-red') : '');
+  item.querySelector('.seo-label').textContent = !coverUrl
+    ? 'Portada con alt descriptivo (sin portada)'
+    : ok ? 'Portada con alt descriptivo' : 'Portada sin alt descriptivo (se usará el título)';
 }
 
 document.getElementById('seoKeyword').addEventListener('input', debounceSEO);
 
 // ── Image upload (portada) ────────────────────────────────────────
-function setCoverPreview(url, alt = null) {
+// El alt de la portada (#coverAlt) es independiente de la imagen: se
+// mantiene al subir o cambiar la portada. Vacío al guardar → el título.
+function setCoverPreview(url) {
   const img    = document.getElementById('coverPreview');
   const rmBtn  = document.getElementById('removeCoverBtn');
   const zone   = document.getElementById('dropZone');
   coverUrl     = url;
-  coverAlt     = alt;
   img.src      = url;
   img.style.display    = 'block';
   rmBtn.style.display  = 'flex';
   zone.style.display   = 'none';
+  debounceSEO();
 }
 
 function removeCover() {
   coverUrl = null;
-  coverAlt = null;
   const img   = document.getElementById('coverPreview');
   const rmBtn = document.getElementById('removeCoverBtn');
   const zone  = document.getElementById('dropZone');
@@ -265,7 +280,10 @@ function removeCover() {
   zone.style.display  = '';
   document.getElementById('coverInput').value = '';
   document.getElementById('coverUploadStatus').textContent = '';
+  debounceSEO();
 }
+
+document.getElementById('coverAlt').addEventListener('input', debounceSEO);
 
 // Sube un archivo a /api/media/upload. Devuelve { url, filename, width, height, … }
 // o lanza un Error con un mensaje listo para mostrar.
@@ -686,7 +704,8 @@ function applyImportedMarkdown({ frontmatter: fm = {}, html = '' }, mode, filena
     imported.push(`${tags.length} tag${tags.length === 1 ? '' : 's'}`);
   }
   if (fm.image && fm.image.src) {
-    setCoverPreview(fm.image.src, fm.image.alt || null);
+    setCoverPreview(fm.image.src);
+    if (fm.image.alt) document.getElementById('coverAlt').value = fm.image.alt;
     document.getElementById('coverUploadStatus').textContent = '';
     imported.push('portada');
   }
@@ -746,6 +765,8 @@ async function loadPost(filename) {
     document.getElementById('twitterCard').value   = fm.twitter_card   || 'summary_large_image';
 
     if (fm.image && fm.image.src) setCoverPreview(fm.image.src);
+    const loadedAlt = (fm.image && fm.image.alt || '').trim();
+    document.getElementById('coverAlt').value = loadedAlt && loadedAlt !== (fm.title || '').trim() ? loadedAlt : '';
 
     document.getElementById('heroLabel').value = fm.heroLabel || '';
     document.getElementById('heroTitle').value = fm.heroTitle || '';
@@ -813,7 +834,7 @@ async function savePost(asDraft) {
     heroCopyColor: body.heroCopyColor,
   });
 
-  if (coverUrl) body.image = { src: coverUrl, alt: coverAlt || title };
+  if (coverUrl) body.image = { src: coverUrl, alt: document.getElementById('coverAlt').value.trim() || title };
 
   try {
     let res, data;
