@@ -908,12 +908,42 @@ async function runBuildAfterSave() {
 document.getElementById('postDate').value = new Date().toISOString().split('T')[0];
 
 // ── Swatches de color del hero ────────────────────────────────────
+// Aviso de contraste (no bloqueante, no cambia la elección): texto pequeño
+// sobre el fondo oscuro del hero (--color-bg-card del blog, #111827).
+const HERO_DARK_BG = '#111827';
+function contrastRatio(hexA, hexB) {
+  const lum = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [a, b] = [lum(hexA), lum(hexB)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+function updateContrastWarning(group) {
+  const color = document.getElementById(group.dataset.target).value;
+  let warning = group.nextElementSibling;
+  if (!warning || !warning.classList.contains('contrast-warning')) {
+    warning = document.createElement('p');
+    warning.className = 'contrast-warning';
+    warning.setAttribute('role', 'status');
+    warning.setAttribute('aria-live', 'polite');
+    group.after(warning);
+  }
+  const ratio = /^#[0-9a-f]{6}$/i.test(color) ? contrastRatio(color, HERO_DARK_BG) : 21;
+  warning.textContent = ratio < 4.5
+    ? `Contraste bajo sobre fondo oscuro: ${ratio.toFixed(1).replace('.', ',')}:1`
+    : '';
+}
+
 function setActiveSwatch(groupSelector, color) {
   const group = document.querySelector(groupSelector);
   if (!group) return;
   group.querySelectorAll('.swatch').forEach((sw) => {
     sw.classList.toggle('selected', sw.dataset.color === color);
+    sw.setAttribute('aria-pressed', String(sw.dataset.color === color));
   });
+  updateContrastWarning(group);
 }
 
 document.querySelectorAll('.color-swatches').forEach((group) => {
@@ -921,9 +951,8 @@ document.querySelectorAll('.color-swatches').forEach((group) => {
   const input = document.getElementById(targetId);
   group.querySelectorAll('.swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
-      group.querySelectorAll('.swatch').forEach((s) => s.classList.remove('selected'));
-      sw.classList.add('selected');
       input.value = sw.dataset.color;
+      setActiveSwatch(`[data-target="${targetId}"]`, sw.dataset.color);
     });
   });
 });

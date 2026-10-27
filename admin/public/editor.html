@@ -359,6 +359,10 @@
     .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; transition: border-color .15s; }
     .swatch:hover { border-color: rgba(255,255,255,0.5); }
     .swatch.selected { border-color: #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
+    .swatch:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+    /* Aviso no bloqueante de contraste (editor.js) */
+    .contrast-warning { margin-top: 6px; font-size: .74rem; line-height: 1.4; color: var(--brand-yellow); }
+    .contrast-warning:empty { display: none; }
   </style>
 </head>
 <body>
