@@ -7,3 +7,7 @@ export { TextAlign } from '@tiptap/extension-text-align';
 export { Highlight } from '@tiptap/extension-highlight';
 export { Link } from '@tiptap/extension-link';
 export { Image } from '@tiptap/extension-image';
+export { Table } from '@tiptap/extension-table';
+export { TableRow } from '@tiptap/extension-table-row';
+export { TableHeader } from '@tiptap/extension-table-header';
+export { TableCell } from '@tiptap/extension-table-cell';
